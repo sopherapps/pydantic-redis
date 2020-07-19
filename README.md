@@ -85,7 +85,7 @@ A simple declarative ORM for Redis
 - Clone the repo and enter its root folder
 
   ```bash
-  git clone https://github.com/sopherapps/redisy.git && cd redisy
+  git clone https://github.com/sopherapps/pydantic-redis.git && cd redisy
   ```
 
 - Ensure you have redis server installed and running at port 6379 on your development machine. Follow the [quick start guide](https://redis.io/topics/quickstart) from redis.
