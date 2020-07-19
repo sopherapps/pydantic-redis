@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="f719cf8d-a696-4fe9-be94-330b5c144abe" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1es3T1YpnE1oCOeb5SnCmvHVGuH" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/lib" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python tests.pytest in test_redis_orm.py">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="redisORM" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/lib/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest in test_redis_orm.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="redisORM" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/test/test_redis_orm.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python tests.pytest in test_redis_orm.py" />
+        <item itemvalue="Python.main" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f719cf8d-a696-4fe9-be94-330b5c144abe" name="Default Changelist" comment="" />
+      <created>1595096476090</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1595096476090</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="WindowStateProjectService">
+    <state width="1825" height="327" key="GridCell.Tab.0.bottom" timestamp="1595129989794">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state width="1825" height="327" key="GridCell.Tab.0.bottom/67.34.1853.1046@67.34.1853.1046" timestamp="1595129989794" />
+    <state width="1825" height="327" key="GridCell.Tab.0.center" timestamp="1595129989792">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state width="1825" height="327" key="GridCell.Tab.0.center/67.34.1853.1046@67.34.1853.1046" timestamp="1595129989792" />
+    <state width="1825" height="327" key="GridCell.Tab.0.left" timestamp="1595129989790">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state width="1825" height="327" key="GridCell.Tab.0.left/67.34.1853.1046@67.34.1853.1046" timestamp="1595129989790" />
+    <state width="1825" height="327" key="GridCell.Tab.0.right" timestamp="1595129989794">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state width="1825" height="327" key="GridCell.Tab.0.right/67.34.1853.1046@67.34.1853.1046" timestamp="1595129989794" />
+    <state width="1825" height="327" key="GridCell.Tab.1.bottom" timestamp="1595129989797">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state width="1825" height="327" key="GridCell.Tab.1.bottom/67.34.1853.1046@67.34.1853.1046" timestamp="1595129989797" />
+    <state width="1825" height="327" key="GridCell.Tab.1.center" timestamp="1595129989795">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state width="1825" height="327" key="GridCell.Tab.1.center/67.34.1853.1046@67.34.1853.1046" timestamp="1595129989795" />
+    <state width="1825" height="327" key="GridCell.Tab.1.left" timestamp="1595129989795">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state width="1825" height="327" key="GridCell.Tab.1.left/67.34.1853.1046@67.34.1853.1046" timestamp="1595129989795" />
+    <state width="1825" height="327" key="GridCell.Tab.1.right" timestamp="1595129989796">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state width="1825" height="327" key="GridCell.Tab.1.right/67.34.1853.1046@67.34.1853.1046" timestamp="1595129989796" />
+    <state x="573" y="345" key="com.intellij.ide.util.TipDialog" timestamp="1595115051405">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state x="573" y="345" key="com.intellij.ide.util.TipDialog/67.34.1853.1046@67.34.1853.1046" timestamp="1595115051405" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/test/test_redis_orm.py</url>
+          <line>154</line>
+          <option name="timeStamp" value="16" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

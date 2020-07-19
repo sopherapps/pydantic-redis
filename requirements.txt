@@ -1,0 +1,13 @@
+appdirs==1.4.4
+attrs==19.3.0
+black==19.10b0
+click==7.1.2
+dataclasses==0.7
+hiredis==1.1.0
+pathspec==0.8.0
+pkg-resources==0.0.0
+pydantic==1.6.1
+redis==3.5.3
+regex==2020.7.14
+toml==0.10.1
+typed-ast==1.4.1
