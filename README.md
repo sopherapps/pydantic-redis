@@ -109,7 +109,6 @@ A simple declarative ORM for Redis
 
 ## ToDo
 
-- [ ] Package for PyPi
 - [ ] Add parsed filtering e.g. title < r
 - [ ] Add pubsub such that for each table, there is a channel for each mutation e.g. table_name**insert, table_name**update, table_name\_\_delete such that code can just subscribe to an given table's mutation and be updated each time a mutation occurs
 
