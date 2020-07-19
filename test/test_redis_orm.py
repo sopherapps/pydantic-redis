@@ -3,9 +3,9 @@
 import unittest
 from datetime import date
 
-from redis_orm.config import RedisConfig
-from redis_orm.model import Model
-from redis_orm.store import Store
+from core.config import RedisConfig
+from core.model import Model
+from core.store import Store
 
 
 class Book(Model):
