@@ -2,9 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f719cf8d-a696-4fe9-be94-330b5c144abe" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/ahundura.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/ahundura.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -40,7 +37,7 @@
       <recent name="$PROJECT_DIR$/lib" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.pytest in test_redisy.py">
+  <component name="RunManager" selected="Python tests.pytest in test_pydantic_redis.py">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="redisORM" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -62,7 +59,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_redisy.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest in test_pydantic_redis.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="redisORM" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -73,13 +70,13 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/test/test_redisy.py&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/test/test_pydantic_redis.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python tests.pytest in test_redisy.py" />
+        <item itemvalue="Python tests.pytest in test_pydantic_redis.py" />
         <item itemvalue="Python.main" />
       </list>
     </recent_temporary>
@@ -147,7 +144,7 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/test/test_redisy.py</url>
+          <url>file://$PROJECT_DIR$/test/test_pydantic_redis.py</url>
           <line>154</line>
           <option name="timeStamp" value="16" />
         </line-breakpoint>
