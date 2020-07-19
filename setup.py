@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="pydantic-redis",
-    version="0.0.4",
+    version="0.0.5",
     description="This package provides a simple ORM for redis using pydantic-like models.",
     long_description=README,
     long_description_content_type="text/markdown",
