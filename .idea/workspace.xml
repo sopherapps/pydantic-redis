@@ -3,7 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="f719cf8d-a696-4fe9-be94-330b5c144abe" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/redisy/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/redisy/__init__.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -100,6 +100,10 @@
       <screen x="67" y="34" width="1853" height="1046" />
     </state>
     <state x="447" y="207" key="#com.intellij.execution.impl.EditConfigurationsDialog/67.34.1853.1046@67.34.1853.1046" timestamp="1595133448182" />
+    <state x="616" y="343" width="744" height="425" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1595133713432">
+      <screen x="67" y="34" width="1853" height="1046" />
+    </state>
+    <state x="616" y="343" width="744" height="425" key="#com.intellij.fileTypes.FileTypeChooser/67.34.1853.1046@67.34.1853.1046" timestamp="1595133713432" />
     <state width="1825" height="263" key="GridCell.Tab.0.bottom" timestamp="1595131153637">
       <screen x="67" y="34" width="1853" height="1046" />
     </state>
