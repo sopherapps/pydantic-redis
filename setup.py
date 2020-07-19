@@ -9,12 +9,12 @@ README = (HERE / "README.md").read_text()
 
 # This call to setup() does all the work
 setup(
-    name="redisy",
-    version="0.0.1",
+    name="pydantic-redis",
+    version="0.0.2",
     description="This package provides a simple ORM for redis using pydantic-like models.",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/sopherapps/redisy",
+    url="https://github.com/sopherapps/pydantic-redis",
     author="Martin Ahindura",
     author_email="team.sopherapps@gmail.com",
     license="MIT",

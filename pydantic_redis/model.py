@@ -2,8 +2,8 @@
 import uuid
 from typing import Optional, List, Any, Union, Dict
 
-from redisy.abstract import _AbstractModel
-from redisy.utils import bytes_to_string
+from pydantic_redis.abstract import _AbstractModel
+from pydantic_redis.utils import bytes_to_string
 
 
 class Model(_AbstractModel):

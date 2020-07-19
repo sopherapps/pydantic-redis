@@ -3,9 +3,9 @@
 import unittest
 from datetime import date
 
-from redisy.config import RedisConfig
-from redisy.model import Model
-from redisy.store import Store
+from pydantic_redis.config import RedisConfig
+from pydantic_redis.model import Model
+from pydantic_redis.store import Store
 
 
 class Book(Model):

@@ -13,13 +13,13 @@ A simple declarative ORM for Redis
 - Install the package
 
   ```bash
-  pip install redisy
+  pip install pydantic-redis
   ```
 
 - Import the `Store`, the `RedisConfig` and the `Model` classes and use accordingly
 
   ```python
-  from redisy import RedisConfig, Model, Store
+  from pydantic_redis import RedisConfig, Model, Store
 
   # Create models as you would create pydantic models i.e. using typings
   class Book(Model):

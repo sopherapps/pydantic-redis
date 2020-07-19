@@ -3,9 +3,9 @@ from typing import Dict, Optional, Any
 
 import redis
 
-from redisy.abstract import _AbstractStore
-from redisy.config import RedisConfig
-from redisy.model import Model
+from pydantic_redis.abstract import _AbstractStore
+from pydantic_redis.config import RedisConfig
+from pydantic_redis.model import Model
 
 
 class Store(_AbstractStore):
