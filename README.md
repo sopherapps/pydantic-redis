@@ -1,4 +1,4 @@
-# redisy
+# pydantic-redis
 
 A simple declarative ORM for Redis
 
