@@ -4,8 +4,8 @@ from typing import Optional, Union, Any, Dict, List
 import redis
 from pydantic import BaseModel
 
-from core.config import RedisConfig
-from core.utils import bytes_to_string
+from redisy.config import RedisConfig
+from redisy.utils import bytes_to_string
 
 
 class _AbstractStore(BaseModel):

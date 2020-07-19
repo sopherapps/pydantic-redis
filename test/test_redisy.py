@@ -3,9 +3,9 @@
 import unittest
 from datetime import date
 
-from core.config import RedisConfig
-from core.model import Model
-from core.store import Store
+from redisy.config import RedisConfig
+from redisy.model import Model
+from redisy.store import Store
 
 
 class Book(Model):

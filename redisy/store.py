@@ -3,9 +3,9 @@ from typing import Dict, Optional, Any
 
 import redis
 
-from core.abstract import _AbstractStore
-from core.config import RedisConfig
-from core.model import Model
+from redisy.abstract import _AbstractStore
+from redisy.config import RedisConfig
+from redisy.model import Model
 
 
 class Store(_AbstractStore):
