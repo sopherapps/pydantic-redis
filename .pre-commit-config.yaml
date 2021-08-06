@@ -1,0 +1,44 @@
+repos:
+-   repo: https://github.com/ambv/black
+    rev: 20.8b1
+    hooks:
+    - id: black
+      language_version: python3
+      types: [python]
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+    - id: check-ast
+    - id: end-of-file-fixer
+      exclude: ^tests/data/
+    - id: requirements-txt-fixer
+    - id: debug-statements
+-   repo:  https://github.com/pre-commit/pygrep-hooks
+    rev: v1.8.0
+    hooks:
+    - id: python-no-eval
+    - id: python-no-log-warn
+    - id: python-use-type-annotations
+-   repo: https://github.com/asottile/reorder_python_imports
+    rev: v2.4.0
+    hooks:
+    -   id: reorder-python-imports
+-   repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.2.1
+    hooks:
+    -   id: python-safety-dependencies-check
+-   repo: https://github.com/PyCQA/bandit
+    rev: 1.7.0
+    hooks:
+    - id: bandit
+      args:
+        - --verbose
+        - -x
+        - docs,tests
+        - --ini
+        - .banditrc
+      files: .py$
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: '3.9.0'
+    hooks:
+    -   id: flake8

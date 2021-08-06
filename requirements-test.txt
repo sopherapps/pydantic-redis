@@ -1,0 +1,9 @@
+pytest
+pytest-asyncio
+pytest-cov
+pytest-env
+pytest-mock
+pytest-mockservers
+pytest-xdist
+redislite
+tox
