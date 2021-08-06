@@ -1,5 +1,4 @@
 """Tests for the redis orm"""
-
 import unittest
 from datetime import date
 
@@ -9,7 +8,7 @@ from pydantic_redis.store import Store
 
 
 class Book(Model):
-    _primary_key_field: str = 'title'
+    _primary_key_field: str = "title"
     title: str
     author: str
     published_on: date
@@ -17,11 +16,28 @@ class Book(Model):
 
 
 books = [
-    Book(title="Oliver Twist", author='Charles Dickens', published_on=date(year=1215, month=4, day=4),
-         in_stock=False),
-    Book(title="Great Expectations", author='Charles Dickens', published_on=date(year=1220, month=4, day=4)),
-    Book(title="Jane Eyre", author='Charles Dickens', published_on=date(year=1225, month=6, day=4), in_stock=False),
-    Book(title="Wuthering Heights", author='Jane Austen', published_on=date(year=1600, month=4, day=4)),
+    Book(
+        title="Oliver Twist",
+        author="Charles Dickens",
+        published_on=date(year=1215, month=4, day=4),
+        in_stock=False,
+    ),
+    Book(
+        title="Great Expectations",
+        author="Charles Dickens",
+        published_on=date(year=1220, month=4, day=4),
+    ),
+    Book(
+        title="Jane Eyre",
+        author="Charles Dickens",
+        published_on=date(year=1225, month=6, day=4),
+        in_stock=False,
+    ),
+    Book(
+        title="Wuthering Heights",
+        author="Jane Austen",
+        published_on=date(year=1600, month=4, day=4),
+    ),
 ]
 
 
@@ -36,7 +52,11 @@ class TestRedisOrm(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.store = Store(name='sample', redis_config=RedisConfig(db=5), life_span_in_seconds=3600)
+        cls.store = Store(
+            name="sample",
+            redis_config=RedisConfig(password="password", db=1),  # nosec
+            life_span_in_seconds=3600,
+        )
         cls.store.register_model(Book)
 
     def tearDown(self) -> None:
@@ -46,11 +66,19 @@ class TestRedisOrm(unittest.TestCase):
 
     def test_register_model_without_primary_key(self):
         """Throws error when a model without the _primary_key_field class variable set is registered"""
-        self.assertRaisesRegex(AttributeError, '_primary_key_field', self.store.register_model,
-                               ModelWithoutPrimaryKey)
+        self.assertRaisesRegex(
+            AttributeError,
+            "_primary_key_field",
+            self.store.register_model,
+            ModelWithoutPrimaryKey,
+        )
         ModelWithoutPrimaryKey._primary_key_field = None
-        self.assertRaisesRegex(Exception, 'should have a _primary_key_field', self.store.register_model,
-                               ModelWithoutPrimaryKey)
+        self.assertRaisesRegex(
+            Exception,
+            "should have a _primary_key_field",
+            self.store.register_model,
+            ModelWithoutPrimaryKey,
+        )
 
     def test_bulk_insert(self):
         """Providing a list of Model instances to the insert method inserts the records in redis"""
@@ -67,7 +95,9 @@ class TestRedisOrm(unittest.TestCase):
         for key in keys:
             pipeline.hgetall(name=key)
         books_in_redis = pipeline.execute()
-        books_in_redis_as_models = [Book(**Book.deserialize_partially(book)) for book in books_in_redis]
+        books_in_redis_as_models = [
+            Book(**Book.deserialize_partially(book)) for book in books_in_redis
+        ]
         self.assertEqual(books, books_in_redis_as_models)
 
     def test_insert_single(self):
@@ -98,16 +128,18 @@ class TestRedisOrm(unittest.TestCase):
         """
         Book.insert(books)
         books_dict = {book.title: book for book in books}
-        columns = ['title', 'author', 'in_stock']
-        response = Book.select(columns=['title', 'author', 'in_stock'])
-        response_dict = {book['title']: book for book in response}
+        columns = ["title", "author", "in_stock"]
+        response = Book.select(columns=["title", "author", "in_stock"])
+        response_dict = {book["title"]: book for book in response}
 
         for title, book in books_dict.items():
             book_in_response = response_dict[title]
             self.assertIsInstance(book_in_response, dict)
             self.assertEqual(sorted(book_in_response.keys()), sorted(columns))
             for column in columns:
-                self.assertEqual(f"{book_in_response[column]}", f"{getattr(book, column)}")
+                self.assertEqual(
+                    f"{book_in_response[column]}", f"{getattr(book, column)}"
+                )
 
     def test_select_some_ids(self):
         """
@@ -124,7 +156,7 @@ class TestRedisOrm(unittest.TestCase):
         """
         Book.insert(books)
         title = books[0].title
-        new_author = 'John Doe'
+        new_author = "John Doe"
         key = f"book_%&_{title}"
         old_book_data = self.store.redis_store.hgetall(name=key)
         old_book = Book(**Book.deserialize_partially(old_book_data))
@@ -164,9 +196,11 @@ class TestRedisOrm(unittest.TestCase):
         for key in keys_to_leave_intact:
             pipeline.hgetall(name=key)
         books_in_redis = pipeline.execute()
-        books_in_redis_as_models = [Book(**Book.deserialize_partially(book)) for book in books_in_redis]
+        books_in_redis_as_models = [
+            Book(**Book.deserialize_partially(book)) for book in books_in_redis
+        ]
         self.assertEqual(books_left_in_db, books_in_redis_as_models)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

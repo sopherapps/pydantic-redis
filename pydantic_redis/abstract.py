@@ -1,5 +1,9 @@
 """Module containing the main base classes"""
-from typing import Optional, Union, Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 import redis
 from pydantic import BaseModel
@@ -12,6 +16,7 @@ class _AbstractStore(BaseModel):
     """
     An abstract class of a store
     """
+
     name: str
     redis_config: RedisConfig
     redis_store: Optional[redis.Redis] = None
@@ -26,20 +31,32 @@ class _AbstractModel(BaseModel):
     """
     An abstract class to help with typings for Model class
     """
+
     _store: _AbstractStore
     _primary_key_field: str
 
     @staticmethod
     def serialize_partially(data: Optional[Dict[str, Any]]):
         """Converts non primitive data types into str"""
-        return {key: (value if isinstance(value, (str, float, int)) and not isinstance(value, (bool,)) else str(value))
-                for key, value in data.items()}
+        return {
+            key: (
+                value
+                if isinstance(value, (str, float, int))
+                and not isinstance(value, (bool,))
+                else str(value)
+            )
+            for key, value in data.items()
+        }
 
     @staticmethod
     def deserialize_partially(data: Optional[Dict[bytes, Any]]):
         """Converts non primitive data types into str"""
-        return {bytes_to_string(key): (bytes_to_string(value) if isinstance(value, (bytes,)) else value)
-                for key, value in data.items()}
+        return {
+            bytes_to_string(key): (
+                bytes_to_string(value) if isinstance(value, (bytes,)) else value
+            )
+            for key, value in data.items()
+        }
 
     @classmethod
     def get_primary_key_field(cls):
@@ -51,7 +68,9 @@ class _AbstractModel(BaseModel):
         raise NotImplementedError("insert should be implemented")
 
     @classmethod
-    def update(cls, primary_key_value: Union[Any, Dict[str, Any]], data: Dict[str, Any]):
+    def update(
+        cls, primary_key_value: Union[Any, Dict[str, Any]], data: Dict[str, Any]
+    ):
         raise NotImplementedError("update should be implemented")
 
     @classmethod

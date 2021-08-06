@@ -1,6 +1,10 @@
 """Module containing the model classes"""
 import uuid
-from typing import Optional, List, Any, Union, Dict
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 from pydantic_redis.abstract import _AbstractModel
 from pydantic_redis.utils import bytes_to_string
@@ -26,11 +30,19 @@ class Model(_AbstractModel):
         return f"{table_name}__index"
 
     @classmethod
-    def insert(cls, data: Union[List[_AbstractModel], _AbstractModel], life_span_seconds: Optional[float] = None):
+    def insert(
+        cls,
+        data: Union[List[_AbstractModel], _AbstractModel],
+        life_span_seconds: Optional[float] = None,
+    ):
         """
         Inserts a given row or sets of rows into the table
         """
-        life_span = life_span_seconds if life_span_seconds is not None else cls._store.life_span_in_seconds
+        life_span = (
+            life_span_seconds
+            if life_span_seconds is not None
+            else cls._store.life_span_in_seconds
+        )
         pipeline = cls._store.redis_store.pipeline()
         data_list = []
 
@@ -40,7 +52,9 @@ class Model(_AbstractModel):
             data_list = [data]
 
         for record in data_list:
-            primary_key_value = getattr(record, cls._primary_key_field, str(uuid.uuid4()))
+            primary_key_value = getattr(
+                record, cls._primary_key_field, str(uuid.uuid4())
+            )
             name = cls.__get_primary_key(primary_key_value=primary_key_value)
             mapping = cls.serialize_partially(record.dict())
             pipeline.hset(name=name, mapping=mapping)
@@ -53,12 +67,17 @@ class Model(_AbstractModel):
         return pipeline.execute()
 
     @classmethod
-    def update(cls, _id: Any, data: Dict[str, Any],
-               life_span_seconds: Optional[float] = None):
+    def update(
+        cls, _id: Any, data: Dict[str, Any], life_span_seconds: Optional[float] = None
+    ):
         """
         Updates a given row or sets of rows in the table
         """
-        life_span = life_span_seconds if life_span_seconds is not None else cls._store.life_span_in_seconds
+        life_span = (
+            life_span_seconds
+            if life_span_seconds is not None
+            else cls._store.life_span_in_seconds
+        )
         pipeline = cls._store.redis_store.pipeline()
 
         if isinstance(data, dict):
@@ -85,7 +104,10 @@ class Model(_AbstractModel):
         elif ids is not None:
             primary_keys = [ids]
 
-        names = [cls.__get_primary_key(primary_key_value=primary_key_value) for primary_key_value in primary_keys]
+        names = [
+            cls.__get_primary_key(primary_key_value=primary_key_value)
+            for primary_key_value in primary_keys
+        ]
         pipeline.delete(*names)
         # remove the primary keys from the index
         table_index_key = cls.get_table_index_key()
@@ -93,7 +115,9 @@ class Model(_AbstractModel):
         return pipeline.execute()
 
     @classmethod
-    def select(cls, columns: Optional[List[str]] = None, ids: Optional[List[Any]] = None):
+    def select(
+        cls, columns: Optional[List[str]] = None, ids: Optional[List[Any]] = None
+    ):
         """
         Selects given rows or sets of rows in the table
         """
@@ -105,7 +129,10 @@ class Model(_AbstractModel):
             table_index_key = cls.get_table_index_key()
             keys = cls._store.redis_store.sscan_iter(name=table_index_key)
         else:
-            keys = (cls.__get_primary_key(primary_key_value=primary_key) for primary_key in ids)
+            keys = (
+                cls.__get_primary_key(primary_key_value=primary_key)
+                for primary_key in ids
+            )
 
         for key in keys:
             if columns is None:
@@ -120,6 +147,15 @@ class Model(_AbstractModel):
         if isinstance(response, list) and columns is None:
             return [cls(**cls.deserialize_partially(record)) for record in response]
         elif isinstance(response, list) and columns is not None:
-            return [{field: bytes_to_string(record[index]) for index, field in enumerate(columns)} for record in
-                    response]
-        return cls(**cls.deserialize_partially(response)) if isinstance(response, dict) else response
+            return [
+                {
+                    field: bytes_to_string(record[index])
+                    for index, field in enumerate(columns)
+                }
+                for record in response
+            ]
+        return (
+            cls(**cls.deserialize_partially(response))
+            if isinstance(response, dict)
+            else response
+        )
