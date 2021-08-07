@@ -18,8 +18,9 @@ tox: setup-test
 	tox
 
 build: setup ## build python packages
-	pip install build
+	pip install twine build
 	python -m build --sdist --wheel --outdir dist/
+	twine check dist/*
 
 lint: setup ## run python linting
 	black pydantic_aioredis
