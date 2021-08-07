@@ -199,6 +199,16 @@ async def test_select_some_ids(redis_store):
 
 
 @pytest.mark.asyncio
+async def test_select_bad_id(redis_store):
+    """
+    Selecting some ids returns only those elements with the given ids
+    """
+    await Book.insert(books)
+    response = await Book.select(ids=["Not in there"])
+    assert response is None
+
+
+@pytest.mark.asyncio
 async def test_update(redis_store):
     """
     Updating an item of a given primary key updates it in redis

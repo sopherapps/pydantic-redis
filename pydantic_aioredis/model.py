@@ -152,6 +152,9 @@ class Model(_AbstractModel):
         if len(response) == 0:
             return None
 
+        if len(response) == 1 and response[0] == {}:
+            return None
+
         if isinstance(response, list) and columns is None:
             return [cls(**cls.deserialize_partially(record)) for record in response]
         elif isinstance(response, list) and columns is not None:
