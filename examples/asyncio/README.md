@@ -3,7 +3,7 @@
 This is a working example using python-aioredis with asyncio. 
 
 # Requirements
- This example requires a running redis server. You can change the RedisConfig on line 27 in the example to match connecting to your running redis.
+ This example requires a running redis server. You can change the RedisConfig on line 28 in the example to match connecting to your running redis.
 
 For your ease of use, we've provided a Makefile in this directory that can start and stop a redis using docker. 
 
