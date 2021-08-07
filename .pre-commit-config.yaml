@@ -34,7 +34,7 @@ repos:
       args:
         - --verbose
         - -x
-        - docs,test
+        - docs,test,examples
       files: .py$
 -   repo: https://gitlab.com/pycqa/flake8
     rev: '3.9.0'
