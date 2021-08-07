@@ -29,7 +29,7 @@ Getting Started
 
   .. code-block:: bash
 
-     pip install pydantic-redis
+     pip install pydantic-aioredis
 
 * 
   Import the ``Store``\ , the ``RedisConfig`` and the ``Model`` classes and use accordingly
