@@ -22,7 +22,7 @@ Main Dependencies
 
 Getting Started
 ---------------
-Examples are in the `exam0ples/ <./examples>`_ directory of this repo. 
+Examples are in the `examples/ <./examples>`_ directory of this repo. 
 
 * 
   Install the package
@@ -98,9 +98,12 @@ Examples are in the `exam0ples/ <./examples>`_ directory of this repo.
 
 
 
-How to test
+Development
 -----------
+The `Makefile <./makefile>`_ has useful targets to help setup your development encironment. We suggest using pyenv to have access to multiple python versions easily.
 
+Environment Setup
+^^^^^^^^^^^^^^^^^
 
 * 
   Clone the repo and enter its root folder
@@ -127,6 +130,9 @@ How to test
 
      make setup
 
+
+How to Run Tests
+^^^^^^^^^^^^^^^^
 * 
   Run the test command to run tests on only python 3.9
 
@@ -152,6 +158,11 @@ How to test
   .. code-block::
 
      tox
+
+Test Requirements
+^^^^^^^^^^^^^^^^^
+
+Prs should always have tests to cover the change being made. Code coverage goals for this project are 100% coverage. 
 
 License
 -------
