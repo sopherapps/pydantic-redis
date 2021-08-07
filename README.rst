@@ -164,6 +164,18 @@ Test Requirements
 
 Prs should always have tests to cover the change being made. Code coverage goals for this project are 100% coverage. 
 
+Code Linting
+^^^^^^^^^^^^
+
+All code should pass Flake8 and be blackened. If you install and setup pre-commit (done automatically by environment setup), pre-commit will lint your code for you.
+
+You can run the linting manually with make
+
+.. code-block:: bashe
+
+   make lint
+
+
 License
 -------
 
