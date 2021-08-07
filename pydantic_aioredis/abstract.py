@@ -8,8 +8,8 @@ from typing import Union
 import redis
 from pydantic import BaseModel
 
-from pydantic_redis.config import RedisConfig
-from pydantic_redis.utils import bytes_to_string
+from pydantic_aioredis.config import RedisConfig
+from pydantic_aioredis.utils import bytes_to_string
 
 
 class _AbstractStore(BaseModel):

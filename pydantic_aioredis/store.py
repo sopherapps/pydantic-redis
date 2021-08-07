@@ -3,11 +3,11 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 
-import redis
+import aioredis
 
-from pydantic_redis.abstract import _AbstractStore
-from pydantic_redis.config import RedisConfig
-from pydantic_redis.model import Model
+from pydantic_aioredis.abstract import _AbstractStore
+from pydantic_aioredis.config import RedisConfig
+from pydantic_aioredis.model import Model
 
 
 class Store(_AbstractStore):
@@ -21,7 +21,7 @@ class Store(_AbstractStore):
         self,
         name: str,
         redis_config: RedisConfig,
-        redis_store: Optional[redis.Redis] = None,
+        redis_store: Optional[aioredis.Redis] = None,
         life_span_in_seconds: Optional[int] = None,
         **data: Any,
     ):
@@ -32,7 +32,11 @@ class Store(_AbstractStore):
             life_span_in_seconds=life_span_in_seconds,
             **data,
         )
-        self.redis_store = redis.Redis(**self.redis_config.dict())
+        self.redis_store = aioredis.from_url(
+            self.redis_config.redis_url,
+            encoding=self.redis_config.encoding,
+            decode_responses=True,
+        )
 
     def register_model(self, model_class: type(Model)):
         """Registers the model to this store"""
