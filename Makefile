@@ -7,6 +7,7 @@ help:
 setup: setup-test ## Setup a dev environment for working in this repo. Assumes in a venv or other isolation
 	pip install -r requirements-dev.txt
 	pre-commit install
+	pip install -e .
 
 setup-test: ## Setup a testing environment for working in this repo. Assumes in a venv or other isolation
 	pip install -r requirements-test.txt

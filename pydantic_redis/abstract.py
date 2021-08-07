@@ -64,21 +64,21 @@ class _AbstractModel(BaseModel):
         return cls._primary_key_field
 
     @classmethod
-    def insert(cls, data: Union[List[Any], Any]):
+    def insert(cls, data: Union[List[Any], Any]):  # pragma: no cover
         raise NotImplementedError("insert should be implemented")
 
     @classmethod
     def update(
         cls, primary_key_value: Union[Any, Dict[str, Any]], data: Dict[str, Any]
-    ):
+    ):  # pragma: no cover
         raise NotImplementedError("update should be implemented")
 
     @classmethod
-    def delete(cls, primary_key_value: Union[Any, Dict[str, Any]]):
+    def delete(cls, primary_key_value: Union[Any, Dict[str, Any]]):  # pragma: no cover
         raise NotImplementedError("delete should be implemented")
 
     @classmethod
-    def select(cls, columns: Optional[List[str]] = None):
+    def select(cls, columns: Optional[List[str]] = None):  # pragma: no cover
         """Should later allow AND, OR"""
         raise NotImplementedError("select should be implemented")
 

@@ -34,9 +34,7 @@ repos:
       args:
         - --verbose
         - -x
-        - docs,tests
-        - --ini
-        - .banditrc
+        - docs,test
       files: .py$
 -   repo: https://gitlab.com/pycqa/flake8
     rev: '3.9.0'

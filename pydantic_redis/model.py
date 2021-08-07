@@ -154,8 +154,3 @@ class Model(_AbstractModel):
                 }
                 for record in response
             ]
-        return (
-            cls(**cls.deserialize_partially(response))
-            if isinstance(response, dict)
-            else response
-        )
