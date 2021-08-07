@@ -4,8 +4,8 @@ A simple declarative ORM for Redis
 
 ## Main Dependencies
 
-- [Python +3.6](https://www.python.org)
-- [redis](https://pypi.org/project/redis/)
+- [Python +3.6](https://www.python.org), 3.7, 3.8, 3.9
+- [aioredis 2.0](https://aioredis.readthedocs.io/en/latest/)
 - [pydantic](https://github.com/samuelcolvin/pydantic/)
 
 ## Getting Started
@@ -19,7 +19,7 @@ A simple declarative ORM for Redis
 - Import the `Store`, the `RedisConfig` and the `Model` classes and use accordingly
 
   ```python
-  from pydantic_redis import RedisConfig, Model, Store
+  from pydantic_aioredis import RedisConfig, Model, Store
 
   # Create models as you would create pydantic models i.e. using typings
   class Book(Model):
@@ -55,28 +55,29 @@ A simple declarative ORM for Redis
       Library(name="Christian Library", address="Buhimba, Hoima, Uganda")
   ]
 
-  # Insert them into redis
-  Book.insert(books)
-  Library.insert(libraries)
+  async def work_with_orm():
+    # Insert them into redis
+    await Book.insert(books)
+    await Library.insert(libraries)
 
-  # Select all books to view them. A list of Model instances will be returned
-  all_books = Book.select()
-  print(all_books) # Will print [Book(title="Oliver Twist", author="Charles Dickens", published_on=date(year=1215, month=4, day=4), in_stock=False), Book(...]
+    # Select all books to view them. A list of Model instances will be returned
+    all_books = await Book.select()
+    print(all_books) # Will print [Book(title="Oliver Twist", author="Charles Dickens", published_on=date(year=1215, month=4, day=4), in_stock=False), Book(...]
 
-  # Or select some of the books
-  some_books = Book.select(ids=["Oliver Twist", "Jane Eyre"])
-  print(some_books) # Will return only those two books
+    # Or select some of the books
+    some_books = await Book.select(ids=["Oliver Twist", "Jane Eyre"])
+    print(some_books) # Will return only those two books
 
-  # Or select some of the columns. THIS RETURNS DICTIONARIES not MODEL Instances
-  # The Dictionaries have values in string form so you might need to do some extra work
-  books_with_few_fields = Book.select(columns=["author", "in_stock"])
-  print(books_with_few_fields) # Will print [{"author": "'Charles Dickens", "in_stock": "True"},...]
+    # Or select some of the columns. THIS RETURNS DICTIONARIES not MODEL Instances
+    # The Dictionaries have values in string form so you might need to do some extra work
+    books_with_few_fields = await Book.select(columns=["author", "in_stock"])
+    print(books_with_few_fields) # Will print [{"author": "'Charles Dickens", "in_stock": "True"},...]
 
-  # Update any book or library
-  Book.update(_id="Oliver Twist", data={"author": "John Doe"})
+    # Update any book or library
+    await Book.update(_id="Oliver Twist", data={"author": "John Doe"})
 
-  # Delete any number of items
-  Library.delete(ids=["The Grand Library"])
+    # Delete any number of items
+    await Library.delete(ids=["The Grand Library"])
 
   ```
 
@@ -88,30 +89,42 @@ A simple declarative ORM for Redis
   git clone https://github.com/sopherapps/pydantic-redis.git && cd pydantic-redis
   ```
 
-- Ensure you have redis server installed and running at port 6379 on your development machine. Follow the [quick start guide](https://redis.io/topics/quickstart) from redis.
-- Create a virtual environment and activate it
+
+- Create a python 3.9 virtual environment and activate it. We suggest using [pyenv](https://github.com/pyenv/pyenv) to easily setup multiple python environments on multiple versions.
 
   ```bash
-  virtualenv -p /usr/bin/python3.6 env && source env/bin/activate
+  # We use the extra python version (3.6, 3.7, 3.8) for tox testing
+  pyenv install 3.9.6 3.6.9 3.7.11 3.8.11
+  pyenv virtualenv 3.9.6 python-aioredis
+  pyenv local python-aioredis 3.6.9 3.7.11 3.8.11
   ```
 
 - Install the dependencies
 
   ```bash
-  pip install -r requirements.txt
+  make setup
   ```
 
-- Run the test command
+- Run the test command to run tests on only python 3.9
 
   ```bash
-  python -m unittest
+  make test
+  ```
+  or
+  ```bash
+  pytest
   ```
 
-## ToDo
+- Run the tox command to run all python version tests
 
-- [ ] Add parsed filtering e.g. title < r
-- [ ] Add pubsub such that for each table, there is a channel for each mutation e.g. table_name**insert, table_name**update, table_name\_\_delete such that code can just subscribe to an given table's mutation and be updated each time a mutation occurs
+  ```bash
+  make tox
+  ```
+  or
+  ```
+  tox
+  ```
 
 ## License
 
-Copyright (c) 2020 [Martin Ahindura](https://github.com/Tinitto) Licensed under the [MIT License](./LICENSE)
+Licensed under the [MIT License](./LICENSE)

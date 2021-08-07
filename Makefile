@@ -15,13 +15,16 @@ setup-test: ## Setup a testing environment for working in this repo. Assumes in 
 test: setup-test ## run python tests
 	pytest
 
+tox: setup-test
+	tox
+
 build: setup ## build python packages
 	pip install build
 	python -m build --sdist --wheel --outdir dist/
 
 lint: setup ## run python linting
-	black pydantic_redis
-	flake8 pydantic_redis
+	black pydantic_aioredis
+	flake8 pydantic_aioredis
 
 check-version: setup ## Check the version of the pydantic-aioredis package
 	python setup.py --version
