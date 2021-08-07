@@ -9,7 +9,9 @@ Inspired by `pydantic-redis <https://github.com/sopherapps/pydantic-redis>`_ by 
 
 .. image:: https://codecov.io/gh/andrewthetechie/pydantic-aioredis/branch/master/graph/badge.svg?token=HXSNB1D4M3
    :target: https://codecov.io/gh/andrewthetechie/pydantic-aioredis
-    
+.. image:: https://github.com/andrewthetechie/pydantic-aioredis/actions/workflows/run_tests_with_tox.yaml/badge.svg?branch=main
+   :target: https://github.com/andrewthetechie/pydantic-aioredis/actions/workflows/run_tests_with_tox.yaml
+   :alt: Unit Tests
 
 
 Main Dependencies
