@@ -26,14 +26,13 @@ Examples are in the [examples/](./examples) directory of this repo.
 ### Installation
 Install the package
 
-    ``` {.sourceCode .bash}
+    
     pip install pydantic-aioredis
 
-    ```
 ### Usage
 Import the `Store`, the `RedisConfig` and the `Model` classes and use accordingly
 
-    ``` {.sourceCode .python}
+    
     from pydantic_aioredis import RedisConfig, Model, Store
 
     # Create models as you would create pydantic models i.e. using typings
@@ -93,7 +92,7 @@ Import the `Store`, the `RedisConfig` and the `Model` classes and use accordingl
 
       # Delete any number of items
       await Library.delete(ids=["The Grand Library"])
-    ```
+    
 
 ## Development
 
