@@ -5,7 +5,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-import redis
+import aioredis
 from pydantic import BaseModel
 
 from pydantic_aioredis.config import RedisConfig
@@ -19,7 +19,7 @@ class _AbstractStore(BaseModel):
 
     name: str
     redis_config: RedisConfig
-    redis_store: Optional[redis.Redis] = None
+    redis_store: Optional[aioredis.Redis] = None
     life_span_in_seconds: Optional[int] = None
 
     class Config:
