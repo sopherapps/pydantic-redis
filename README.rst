@@ -16,13 +16,13 @@ Main Dependencies
 -----------------
 
 
-* `Python +3.6 <https://www.python.org>`_\ , 3.7, 3.8, 3.9
+* `Python +3.6 <https://www.python.org>`_
 * `aioredis 2.0 <https://aioredis.readthedocs.io/en/latest/>`_
 * `pydantic <https://github.com/samuelcolvin/pydantic/>`_
 
 Getting Started
 ---------------
-
+Examples are in the `exam0ples/ <./examples>`_ directory of this repo. 
 
 * 
   Install the package
@@ -95,6 +95,8 @@ Getting Started
 
        # Delete any number of items
        await Library.delete(ids=["The Grand Library"])
+
+
 
 How to test
 -----------
