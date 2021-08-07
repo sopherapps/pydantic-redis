@@ -7,6 +7,11 @@ A simple declarative ORM for Redis, using aioredis. Use your Pydantic models lik
 Inspired by `pydantic-redis <https://github.com/sopherapps/pydantic-redis>`_ by `Martin Ahindura <https://github.com/Tinitto>`_
 
 
+.. image:: https://codecov.io/gh/andrewthetechie/pydantic-aioredis/branch/master/graph/badge.svg?token=HXSNB1D4M3
+:target: https://codecov.io/gh/andrewthetechie/pydantic-aioredis
+    
+
+
 Main Dependencies
 -----------------
 
