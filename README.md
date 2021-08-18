@@ -7,9 +7,20 @@ Inspired by
 [pydantic-redis](https://github.com/sopherapps/pydantic-redis) by
 [Martin Ahindura](https://github.com/Tinitto)
 
-[![image](https://codecov.io/gh/andrewthetechie/pydantic-aioredis/branch/master/graph/badge.svg?token=HXSNB1D4M3)](https://codecov.io/gh/andrewthetechie/pydantic-aioredis)
 
-[![Unit Tests](https://github.com/andrewthetechie/pydantic-aioredis/actions/workflows/run_tests_with_tox.yaml/badge.svg?branch=main)](https://github.com/andrewthetechie/pydantic-aioredis/actions/workflows/run_tests_with_tox.yaml)
+<p align="center">
+    <a href="https://github.com/andrewthetechie/pydantic-aioredis" target="_blank">
+        <img src="https://img.shields.io/github/last-commit/andrewthetechie/pydantic-aioredis" alt="Latest Commit">
+    </a>
+        <img src="https://github.com/andrewthetechie/pydantic-aioredis/actions/workflows/run_tests_with_tox.yaml/badge.svg?branch=main">
+        <img src="https://img.shields.io/codecov/c/github/andrewthetechie/pydantic-aioredis">
+    <br />
+    <a href="https://pypi.org/project/pydantic-aioredis" target="_blank">
+        <img src="https://img.shields.io/pypi/v/pydantic-aioredis" alt="Package version">
+    </a>
+    <img src="https://img.shields.io/pypi/pyversions/pydantic-aioredis">
+    <img src="https://img.shields.io/github/license/andrewthetechie/pydantic-aioredis">
+</p>
 
 ## Main Dependencies
 
