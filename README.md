@@ -19,7 +19,7 @@ Inspired by
         <img src="https://img.shields.io/pypi/v/pydantic-aioredis" alt="Package version">
     </a>
     <img src="https://img.shields.io/pypi/pyversions/pydantic-aioredis">
-    <img src="https://img.shields.io/github/license/andrewthetechie/pydantic-aioredis">
+    <img src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
 ## Main Dependencies
