@@ -19,10 +19,12 @@ class _AbstractStore(BaseModel):
 
     name: str
     redis_config: RedisConfig
-    redis_store: Optional[aioredis.Redis] = None
-    life_span_in_seconds: Optional[int] = None
+    redis_store: aioredis.Redis = None
+    life_span_in_seconds: int = None
 
     class Config:
+        """Pydantic schema config"""
+
         arbitrary_types_allowed = True
         orm_mode = True
 
@@ -36,7 +38,7 @@ class _AbstractModel(BaseModel):
     _primary_key_field: str
 
     @staticmethod
-    def serialize_partially(data: Optional[Dict[str, Any]]):
+    def serialize_partially(data: Dict[str, Any]):
         """Converts non primitive data types into str"""
         return {
             key: (
@@ -49,7 +51,7 @@ class _AbstractModel(BaseModel):
         }
 
     @staticmethod
-    def deserialize_partially(data: Optional[Dict[bytes, Any]]):
+    def deserialize_partially(data: Dict[bytes, Any]):
         """Converts non primitive data types into str"""
         return {
             bytes_to_string(key): (
@@ -64,23 +66,35 @@ class _AbstractModel(BaseModel):
         return cls._primary_key_field
 
     @classmethod
-    def insert(cls, data: Union[List[Any], Any]):  # pragma: no cover
+    @classmethod
+    async def insert(
+        cls,
+        data: Union[List["_AbstractModel"], "_AbstractModel"],
+        life_span_seconds: Optional[int] = None,
+    ):  # pragma: no cover
+        """Insert into the redis store"""
         raise NotImplementedError("insert should be implemented")
 
     @classmethod
-    def update(
-        cls, primary_key_value: Union[Any, Dict[str, Any]], data: Dict[str, Any]
+    async def update(
+        cls, _id: Any, data: Dict[str, Any], life_span_seconds: Optional[int] = None
     ):  # pragma: no cover
+        """Update an existing key"""
         raise NotImplementedError("update should be implemented")
 
     @classmethod
-    def delete(cls, primary_key_value: Union[Any, Dict[str, Any]]):  # pragma: no cover
+    async def delete(cls, ids: Union[Any, List[Any]]):  # pragma: no cover
+        """Delete a key"""
         raise NotImplementedError("delete should be implemented")
 
     @classmethod
-    def select(cls, columns: Optional[List[str]] = None):  # pragma: no cover
+    async def select(
+        cls, columns: Optional[List[str]] = None, ids: Optional[List[Any]] = None
+    ):  # pragma: no cover
         """Should later allow AND, OR"""
         raise NotImplementedError("select should be implemented")
 
     class Config:
+        """Pydantic schema config"""
+
         arbitrary_types_allowed = True

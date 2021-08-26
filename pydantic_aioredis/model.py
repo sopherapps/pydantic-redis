@@ -34,7 +34,7 @@ class Model(_AbstractModel):
     async def insert(
         cls,
         data: Union[List[_AbstractModel], _AbstractModel],
-        life_span_seconds: Optional[float] = None,
+        life_span_seconds: Optional[int] = None,
     ):
         """
         Inserts a given row or sets of rows into the table
@@ -70,7 +70,7 @@ class Model(_AbstractModel):
 
     @classmethod
     async def update(
-        cls, _id: Any, data: Dict[str, Any], life_span_seconds: Optional[float] = None
+        cls, _id: Any, data: Dict[str, Any], life_span_seconds: Optional[int] = None
     ):
         """
         Updates a given row or sets of rows in the table
@@ -85,7 +85,8 @@ class Model(_AbstractModel):
             if isinstance(data, dict):
                 name = cls.__get_primary_key(primary_key_value=_id)
                 pipeline.hset(name=name, mapping=cls.serialize_partially(data))
-                pipeline.expire(name=name, time=life_span)
+                if life_span is not None:
+                    pipeline.expire(name=name, time=life_span)
                 # save the primary key in an index
                 table_index_key = cls.get_table_index_key()
                 pipeline.sadd(table_index_key, name)
@@ -125,8 +126,6 @@ class Model(_AbstractModel):
         Selects given rows or sets of rows in the table
         """
         async with cls._store.redis_store.pipeline() as pipeline:
-            keys = ()
-
             if ids is None:
                 # get all keys in the table immediately so don't use a pipeline
                 table_index_key = cls.get_table_index_key()
@@ -157,11 +156,11 @@ class Model(_AbstractModel):
 
         if isinstance(response, list) and columns is None:
             return [cls(**cls.deserialize_partially(record)) for record in response]
-        elif isinstance(response, list) and columns is not None:
-            return [
-                {
-                    field: bytes_to_string(record[index])
-                    for index, field in enumerate(columns)
-                }
-                for record in response
-            ]
+
+        return [
+            {
+                field: bytes_to_string(record[index])
+                for index, field in enumerate(columns)
+            }
+            for record in response
+        ]
