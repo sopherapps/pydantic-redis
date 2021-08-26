@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 
 class RedisConfig(BaseModel):
+    """A config object for connecting to redis"""
+
     host: str = "localhost"
     port: int = 6379
     db: int = 0
@@ -21,4 +23,6 @@ class RedisConfig(BaseModel):
         return f"{proto}://:{self.password}@{self.host}:{self.port}/{self.db}"
 
     class Config:
+        """Pydantic schema config"""
+
         orm_mode = True

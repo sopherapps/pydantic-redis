@@ -1,4 +1,6 @@
 black
 flake8>=3.9.1
+mypy
 pre-commit>=2.12.1
+pylint
 setuptools-git-versioning
