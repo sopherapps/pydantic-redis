@@ -1,7 +1,7 @@
 """Entry point for redisy"""
 
-from .store import Store
-from .model import Model
 from .config import RedisConfig
+from .model import Model
+from .store import Store
 
-__version__ = "0.0.5"
+__version__ = "0.1.0"
