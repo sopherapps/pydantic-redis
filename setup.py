@@ -11,7 +11,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="pydantic-redis",
-    version="0.1.0",
+    version="0.1.1",
     description="This package provides a simple ORM for redis using pydantic-like models.",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -26,7 +26,7 @@ setup(
     ],
     packages=find_packages(exclude=("test",)),
     include_package_data=True,
-    install_requires=["pydantic", "redis", "hiredis"],
+    install_requires=["pydantic", "redis", "hiredis", "orjson"],
     entry_points={
     },
 )
