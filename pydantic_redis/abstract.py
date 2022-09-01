@@ -1,11 +1,11 @@
 """Module containing the main base classes"""
 from typing import Optional, Union, Any, Dict, List
 
+import orjson
 import redis
 from pydantic import BaseModel
 
 from pydantic_redis.config import RedisConfig
-from pydantic_redis.utils import bytes_to_string
 
 
 class _AbstractStore(BaseModel):
@@ -29,16 +29,15 @@ class _AbstractModel(BaseModel):
     _store: _AbstractStore
     _primary_key_field: str
 
-    @staticmethod
-    def serialize_partially(data: Optional[Dict[str, Any]]):
+    @classmethod
+    def serialize_partially(cls, data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
-        return {key: (value if isinstance(value, (str, float, int)) and not isinstance(value, (bool,)) else str(value))
-                for key, value in data.items()}
+        return {key: orjson.dumps(value) for key, value in data.items()}
 
-    @staticmethod
-    def deserialize_partially(data: Optional[Dict[bytes, Any]]):
+    @classmethod
+    def deserialize_partially(cls, data: Optional[Dict[bytes, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
-        return {bytes_to_string(key): (bytes_to_string(value) if isinstance(value, (bytes,)) else value)
+        return {str(key, "utf-8") if isinstance(key, bytes) else key: orjson.loads(value)
                 for key, value in data.items()}
 
     @classmethod
