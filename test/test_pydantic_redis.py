@@ -55,6 +55,7 @@ class TestRedisOrm(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.store = Store(name='sample', redis_config=RedisConfig(db=5), life_span_in_seconds=3600)
         cls.store.register_model(Book)
+        cls.store.register_model(Author)
 
     def tearDown(self) -> None:
         """Tear down a few things"""

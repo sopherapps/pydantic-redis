@@ -123,8 +123,7 @@ class Model(_AbstractModel):
         if pipeline is None and hasattr(cls, "_store"):
             pipeline = cls._store.redis_store.pipeline()
 
-        cls.__replace_foreign_keys_with_nested_records_in_place(data, pipeline=pipeline)
-        return data
+        return cls.__replace_foreign_keys_with_nested_records(data, pipeline=pipeline)
 
     @staticmethod
     def __select_fields_from_dict(data: Dict[str, Any], fields: List[str]):
@@ -185,17 +184,19 @@ class Model(_AbstractModel):
             del data[k]
 
     @classmethod
-    def __replace_foreign_keys_with_nested_records_in_place(cls, data: Optional[Dict[str, Any]],
-                                                            pipeline: Optional[Pipeline] = None):
+    def __replace_foreign_keys_with_nested_records(cls, data: Optional[Dict[str, Any]],
+                                                   pipeline: Optional[Pipeline] = None) -> Optional[Dict[str, Any]]:
         """Replaces all foreign keys with nested records (loads stuff eagerly)"""
         field_types = typing.get_type_hints(cls)
         has_pipeline = isinstance(pipeline, Pipeline)
 
         if not has_pipeline:
             # it is impossible to eagerly load without a pipeline
-            return
+            return data
 
+        new_data = {}
         for k, v in data.items():
+            key, value = k, v
             if k.startswith("__"):
                 key = k.lstrip("__")
                 foreign_model = field_types.get(key, None)
@@ -203,11 +204,13 @@ class Model(_AbstractModel):
                 if issubclass(foreign_model, Model):
                     values = foreign_model.select(ids=[v], pipeline=pipeline)
                     try:
-                        data[key] = values[0]
+                        value = values[0]
                     except IndexError:
                         raise ValueError(f"The associated {foreign_model.__class__} of key {key} does not exist")
 
-                del data[k]
+            new_data[key] = value
+
+        return new_data
 
     @classmethod
     def __replace_nested_record_fields_with_foreign_key_fields(cls, columns: Optional[List[str]]) -> Optional[
