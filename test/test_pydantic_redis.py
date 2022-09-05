@@ -2,7 +2,7 @@
 
 import unittest
 from datetime import date
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 
 from pydantic_redis.config import RedisConfig
 from pydantic_redis.model import Model
@@ -86,7 +86,7 @@ class TestRedisOrm(unittest.TestCase):
         for book_key in book_keys:
             pipeline.hgetall(name=book_key)
         books_in_redis = pipeline.execute()
-        books_in_redis_as_models = [Book(**Book.deserialize_partially(book)) for book in books_in_redis]
+        books_in_redis_as_models = [self.__deserialize_book_data(book) for book in books_in_redis]
         self.assertEqual(books, books_in_redis_as_models)
 
     def test_bulk_nested_insert(self):
@@ -122,7 +122,7 @@ class TestRedisOrm(unittest.TestCase):
         Book.insert(books[0])
 
         book = self.store.redis_store.hgetall(name=key)
-        book_as_model = Book(**Book.deserialize_partially(book))
+        book_as_model = self.__deserialize_book_data(book)
         self.assertEqual(books[0], book_as_model)
 
     def test_insert_single_nested(self):
@@ -187,14 +187,14 @@ class TestRedisOrm(unittest.TestCase):
         book_key = f"book_%&_{title}"
         new_author_key = f"author_%&_{new_author.name}"
         old_book_data = self.store.redis_store.hgetall(name=book_key)
-        old_book = Book(**Book.deserialize_partially(old_book_data))
+        old_book = self.__deserialize_book_data(old_book_data)
         self.assertEqual(old_book, books[0])
         self.assertNotEqual(old_book.author, new_author)
 
         Book.update(_id=title, data={"author": new_author, "in_stock": new_in_stock})
 
         book_data = self.store.redis_store.hgetall(name=book_key)
-        book = Book(**Book.deserialize_partially(book_data))
+        book = self.__deserialize_book_data(book_data)
         author_data = self.store.redis_store.hgetall(name=new_author_key)
         author = Author(**Author.deserialize_partially(author_data))
         self.assertEqual(book.author, new_author)
@@ -218,7 +218,7 @@ class TestRedisOrm(unittest.TestCase):
         old_author_data = self.store.redis_store.hgetall(name=author_key)
         old_author = Author(**Author.deserialize_partially(old_author_data))
         old_book_data = self.store.redis_store.hgetall(name=book_key)
-        old_book = Book(**Book.deserialize_partially(old_book_data))
+        old_book = self.__deserialize_book_data(old_book_data)
         self.assertEqual(old_book, books[0])
         self.assertEqual(old_author, books[0].author)
         self.assertNotEqual(old_author, updated_author)
@@ -226,7 +226,7 @@ class TestRedisOrm(unittest.TestCase):
         Book.update(_id=books[0].title, data={"author": updated_author, "in_stock": new_in_stock})
 
         book_data = self.store.redis_store.hgetall(name=book_key)
-        book = Book(**Book.deserialize_partially(book_data))
+        book = self.__deserialize_book_data(book_data)
         author_data = self.store.redis_store.hgetall(name=author_key)
         author = Author(**Author.deserialize_partially(author_data))
         self.assertEqual(book.author, updated_author)
@@ -261,7 +261,7 @@ class TestRedisOrm(unittest.TestCase):
         for key in book_keys_to_leave_intact:
             pipeline.hgetall(name=key)
         books_in_redis = pipeline.execute()
-        books_in_redis_as_models = [Book(**Book.deserialize_partially(book)) for book in books_in_redis]
+        books_in_redis_as_models = [self.__deserialize_book_data(book) for book in books_in_redis]
         self.assertEqual(books_left_in_db, books_in_redis_as_models)
 
         pipeline = self.store.redis_store.pipeline()
@@ -272,6 +272,13 @@ class TestRedisOrm(unittest.TestCase):
             [Author(**Author.deserialize_partially(author)) for author in authors_in_redis], key=lambda x: x.name)
         expected = sorted(authors.values(), key=lambda x: x.name)
         self.assertListEqual(expected, authors_in_redis_as_models)
+
+    @staticmethod
+    def __deserialize_book_data(raw_book_data: Dict[bytes, Any]) -> Book:
+        """Deserializes the raw book data returning a book instance"""
+        data = Book.deserialize_partially(raw_book_data)
+        data["author"] = Author.select(ids=[data["__author"]])[0]
+        return Book(**data)
 
 
 if __name__ == '__main__':

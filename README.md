@@ -61,7 +61,7 @@ store.register_model(Book)
 store.register_model(Library)
 store.register_model(Author)
 
-# Sample books. You can create as many as you wish anywhere in the code
+# sample authors. You can create as many as you wish anywhere in the code
 
 authors = {
   "charles": Author(name="Charles Dickens", active_years=(1220, 1280)),

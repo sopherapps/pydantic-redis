@@ -1,7 +1,6 @@
 """Module containing the model classes"""
 import typing
-import uuid
-from typing import Optional, List, Any, Union, Dict, Tuple
+from typing import Optional, List, Any, Union, Dict
 
 from redis.client import Pipeline
 
@@ -33,18 +32,18 @@ class Model(_AbstractModel):
         Inserts a given row or sets of rows into the table
         """
         life_span = life_span_seconds if life_span_seconds is not None else cls._store.life_span_in_seconds
-        pipeline = cls._store.redis_store.pipeline()
-        data_list = []
+        with cls._store.redis_store.pipeline(transaction=True) as pipeline:
+            data_list = []
 
-        if isinstance(data, list):
-            data_list = data
-        elif isinstance(data, _AbstractModel):
-            data_list = [data]
+            if isinstance(data, list):
+                data_list = data
+            elif isinstance(data, _AbstractModel):
+                data_list = [data]
 
-        for record in data_list:
-            cls.__insert_on_pipeline(_id=None, pipeline=pipeline, record=record, life_span=life_span)
+            for record in data_list:
+                cls.__insert_on_pipeline(_id=None, pipeline=pipeline, record=record, life_span=life_span)
 
-        return pipeline.execute()
+            return pipeline.execute()
 
     @classmethod
     def update(cls, _id: Any, data: Dict[str, Any],
@@ -53,32 +52,34 @@ class Model(_AbstractModel):
         Updates a given row or sets of rows in the table
         """
         life_span = life_span_seconds if life_span_seconds is not None else cls._store.life_span_in_seconds
-        pipeline = cls._store.redis_store.pipeline()
+        with cls._store.redis_store.pipeline(transaction=True) as pipeline:
+            if isinstance(data, dict):
+                cls.__insert_on_pipeline(_id=_id, pipeline=pipeline, record=data, life_span=life_span)
 
-        if isinstance(data, dict):
-            cls.__insert_on_pipeline(_id=_id, pipeline=pipeline, record=data, life_span=life_span)
-
-        return pipeline.execute()
+            return pipeline.execute()
 
     @classmethod
     def delete(cls, ids: Union[Any, List[Any]]):
         """
         deletes a given row or sets of rows in the table
         """
-        pipeline = cls._store.redis_store.pipeline()
-        primary_keys = []
+        with cls._store.redis_store.pipeline() as pipeline:
+            primary_keys = []
 
-        if isinstance(ids, list):
-            primary_keys = ids
-        elif ids is not None:
-            primary_keys = [ids]
+            if isinstance(ids, list):
+                primary_keys = ids
+            elif ids is not None:
+                primary_keys = [ids]
 
-        names = [cls.__get_primary_key(primary_key_value=primary_key_value) for primary_key_value in primary_keys]
-        pipeline.delete(*names)
-        # remove the primary keys from the index
-        table_index_key = cls.get_table_index_key()
-        pipeline.srem(table_index_key, *names)
-        return pipeline.execute()
+            names = [
+                cls.__get_primary_key(primary_key_value=primary_key_value)
+                for primary_key_value in primary_keys
+            ]
+            pipeline.delete(*names)
+            # remove the primary keys from the index
+            table_index_key = cls.get_table_index_key()
+            pipeline.srem(table_index_key, *names)
+            return pipeline.execute()
 
     @classmethod
     def select(cls, columns: Optional[List[str]] = None, ids: Optional[List[Any]] = None,
@@ -86,9 +87,7 @@ class Model(_AbstractModel):
         """
         Selects given rows or sets of rows in the table
         """
-        pipeline = cls._store.redis_store.pipeline() if pipeline is None else pipeline
-        columns = cls.__replace_nested_record_fields_with_foreign_key_fields(columns)
-
+        columns = cls.__get_select_fields(columns)
         if ids is None:
             # get all keys in the table immediately so don't use a pipeline
             table_index_key = cls.get_table_index_key()
@@ -96,44 +95,75 @@ class Model(_AbstractModel):
         else:
             keys = (cls.__get_primary_key(primary_key_value=primary_key) for primary_key in ids)
 
-        for key in keys:
-            if columns is None:
-                pipeline.hgetall(name=key)
-            else:
-                pipeline.hmget(name=key, keys=columns)
-        response = pipeline.execute()
+        with cls._store.redis_store.pipeline() as pipeline:
+            for key in keys:
+                if columns is None:
+                    pipeline.hgetall(name=key)
+                else:
+                    pipeline.hmget(name=key, keys=columns)
+
+            response = pipeline.execute()
 
         if len(response) == 0:
             return None
-
-        if isinstance(response, list) and columns is None:
-            return [cls(**cls.deserialize_partially(record, pipeline=pipeline)) for record in response]
+        elif isinstance(response, list) and columns is None:
+            return cls.__parse_model_list(response)
         elif isinstance(response, list) and columns is not None:
-            raw_data = [{field: record[index] for index, field in enumerate(columns)}
-                        for record in response]
+            return cls.__parse_hmget_response(response, columns=columns)
+        elif isinstance(response, dict):
+            return cls.__parse_model_list([response])[0]
 
-            return [cls.deserialize_partially(record, pipeline=pipeline) for record in raw_data]
-        return cls(**cls.deserialize_partially(response, pipeline=pipeline)) if isinstance(response, dict) else response
+        return response
 
     @classmethod
-    def deserialize_partially(cls, data: Optional[Dict[bytes, Any]], pipeline: Optional[Pipeline] = None) -> Dict[
-        str, Any]:
-        data = super().deserialize_partially(data)
+    def __parse_dict_list(cls, data: List[Dict[bytes, Any]]) -> List[Dict[str, Any]]:
+        """
+        Converts a list of dictionaries straight from Redis into a list of normalized dictionaries
+        with foreign keys replaced by model instances
+        """
+        parsed_data = [cls.deserialize_partially(record) for record in data if record != {}]
+        field_types = typing.get_type_hints(cls)
+        nested_model_map: Dict[str, typing.Type[Model]] = {
+            k: field_types.get(k.lstrip("__"))
+            for k in parsed_data[0].keys() if k.startswith("__")
+        }
 
-        if pipeline is None and hasattr(cls, "_store"):
-            pipeline = cls._store.redis_store.pipeline()
+        for key, model in nested_model_map.items():
+            field = key.lstrip("__")
+            ids = [record.pop(key, None) for record in parsed_data]
+            # a bulk network request might be faster than eagerly loading for each record for many records
+            nested_models = model.select(ids=ids)
+            parsed_data = [{**record, field: model} for record, model in zip(parsed_data, nested_models)]
 
-        return cls.__replace_foreign_keys_with_nested_records(data, pipeline=pipeline)
+        return parsed_data
 
-    @staticmethod
-    def __select_fields_from_dict(data: Dict[str, Any], fields: List[str]):
-        """Returns a dictionary that has only a subset of the given fields"""
-        return {k: data.get(k, None) for k in fields}
+    @classmethod
+    def __parse_hmget_response(cls, data: List[List[Any]], columns: List[str]) -> List[Dict[str, Any]]:
+        """
+        Converts the response from redis.hmget (a list of lists ordered identically to ``columns``) into a list of
+        normalized dictionaries where foreign keys have been replaced by nested models
+        """
+        dict_list = [
+            {
+                field: record[index]
+                for index, field in enumerate(columns)
+            }
+            for record in data
+        ]
+        return cls.__parse_dict_list(dict_list)
+
+    @classmethod
+    def __parse_model_list(cls, data: List[Dict[bytes, Any]]) -> List["Model"]:
+        """
+        Converts a list of dictionaries straight from Redis into a list of Model instances
+        """
+        parsed_dict_list = cls.__parse_dict_list(data)
+        return [cls(**record) for record in parsed_dict_list]
 
     @classmethod
     def __insert_on_pipeline(cls,
-                             _id: Optional[Any],
                              pipeline: Pipeline,
+                             _id: Optional[Any],
                              record: Union[_AbstractModel, Dict[str, Any]],
                              life_span: Optional[Union[float, int]] = None
                              ) -> Any:
@@ -142,90 +172,60 @@ class Model(_AbstractModel):
         thus the data is not yet persisted in redis
         Returns the key of the created item
         """
-        foreign_key_list = cls.__insert_nested_records(pipeline=pipeline, record=record, life_span=life_span)
-        key = _id if _id is not None else getattr(record, cls._primary_key_field, str(uuid.uuid4()))
-        data = record.dict() if isinstance(record, _AbstractModel) else record
-        cls.__replace_nested_records_with_foreign_keys_in_place(data=data, foreign_key_list=foreign_key_list)
-
+        key = _id if _id is not None else getattr(record, cls._primary_key_field)
+        data = cls.__get_serializable_dict(pipeline=pipeline, record=record, life_span=life_span)
         name = cls.__get_primary_key(primary_key_value=key)
         mapping = cls.serialize_partially(data)
         pipeline.hset(name=name, mapping=mapping)
-        pipeline.expire(name=name, time=life_span)
+
+        if life_span is not None:
+            pipeline.expire(name=name, time=life_span)
         # save the primary key in an index
         table_index_key = cls.get_table_index_key()
         pipeline.sadd(table_index_key, name)
-        pipeline.expire(table_index_key, time=life_span)
+        if life_span is not None:
+            pipeline.expire(table_index_key, time=life_span)
 
         return key
 
     @classmethod
-    def __insert_nested_records(cls,
+    def __get_serializable_dict(cls,
                                 pipeline: Pipeline,
                                 record: Union[_AbstractModel, Dict[str, Any]],
-                                life_span: Optional[Union[float, int]] = None) -> List[Tuple[str, Any]]:
-        """Inserts all nested records for the given data, with the given life span"""
+                                life_span: Optional[Union[float, int]] = None) -> Dict[str, Any]:
+        """
+        Returns a dictionary that can be serialized.
+        A few cleanups it does include:
+          - Upserting any nested records in `record`
+          - Replacing the keys of nested records with their `__` suffixed versions e.g. `__author` instead of author
+          - Replacing the values of nested records with their foreign keys
+        """
         data = record.items() if isinstance(record, dict) else record
-        foreign_key_list = []
+        new_data = {}
 
         for k, v in data:
-            if isinstance(v, Model):
-                foreign_key = v.__class__.__insert_on_pipeline(
-                    _id=None, pipeline=pipeline, record=v, life_span=life_span)
-                foreign_key_list.append((k, foreign_key))
-
-        return foreign_key_list
-
-    @staticmethod
-    def __replace_nested_records_with_foreign_keys_in_place(data: Dict[str, Any],
-                                                            foreign_key_list: List[Tuple[str, Any]]):
-        """Replaces nested records with foreign keys to save the raw data in redis"""
-        for k, v in foreign_key_list:
-            data[f"__{k}"] = v
-            del data[k]
-
-    @classmethod
-    def __replace_foreign_keys_with_nested_records(cls, data: Optional[Dict[str, Any]],
-                                                   pipeline: Optional[Pipeline] = None) -> Optional[Dict[str, Any]]:
-        """Replaces all foreign keys with nested records (loads stuff eagerly)"""
-        field_types = typing.get_type_hints(cls)
-        has_pipeline = isinstance(pipeline, Pipeline)
-
-        if not has_pipeline:
-            # it is impossible to eagerly load without a pipeline
-            return data
-
-        new_data = {}
-        for k, v in data.items():
             key, value = k, v
-            if k.startswith("__"):
-                key = k.lstrip("__")
-                foreign_model = field_types.get(key, None)
 
-                if issubclass(foreign_model, Model):
-                    values = foreign_model.select(ids=[v], pipeline=pipeline)
-                    try:
-                        value = values[0]
-                    except IndexError:
-                        raise ValueError(f"The associated {foreign_model.__class__} of key {key} does not exist")
+            if isinstance(v, Model):
+                key = f"__{key}"
+                value = v.__class__.__insert_on_pipeline(
+                    _id=None, pipeline=pipeline, record=v, life_span=life_span)
 
             new_data[key] = value
-
         return new_data
 
     @classmethod
-    def __replace_nested_record_fields_with_foreign_key_fields(cls, columns: Optional[List[str]]) -> Optional[
-        List[str]]:
-        """Replaces the nested record field names with foreign key field names"""
+    def __get_select_fields(cls, columns: Optional[List[str]]) -> Optional[List[str]]:
+        """
+        Gets the fields to be used for selecting HMAP fields in Redis
+        It replaces any fields in `columns` that correspond to nested records with their
+        `__` suffixed versions
+        """
         if columns is None:
             return None
 
         field_types = typing.get_type_hints(cls)
-        result = []
-        for k in columns:
-            foreign_model = field_types.get(k, None)
-            if issubclass(foreign_model, Model):
-                k = f"__{k}"
-
-            result.append(k)
-
-        return result
+        return [
+            f"__{k}" if issubclass(field_types.get(k, None), Model) else k
+            for k in columns
+        ]
