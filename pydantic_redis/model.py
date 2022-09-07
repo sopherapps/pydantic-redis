@@ -122,18 +122,19 @@ class Model(_AbstractModel):
         with foreign keys replaced by model instances
         """
         parsed_data = [cls.deserialize_partially(record) for record in data if record != {}]
-        field_types = typing.get_type_hints(cls)
-        nested_model_map: Dict[str, typing.Type[Model]] = {
-            k: field_types.get(k.lstrip("__"))
-            for k in parsed_data[0].keys() if k.startswith("__")
-        }
+        if len(parsed_data) > 0:
+            field_types = typing.get_type_hints(cls)
+            nested_model_map: Dict[str, typing.Type[Model]] = {
+                k: field_types.get(k.lstrip("__"))
+                for k in parsed_data[0].keys() if k.startswith("__")
+            }
 
-        for key, model in nested_model_map.items():
-            field = key.lstrip("__")
-            ids = [record.pop(key, None) for record in parsed_data]
-            # a bulk network request might be faster than eagerly loading for each record for many records
-            nested_models = model.select(ids=ids)
-            parsed_data = [{**record, field: model} for record, model in zip(parsed_data, nested_models)]
+            for key, model in nested_model_map.items():
+                field = key.lstrip("__")
+                ids = [record.pop(key, None) for record in parsed_data]
+                # a bulk network request might be faster than eagerly loading for each record for many records
+                nested_models = model.select(ids=ids)
+                parsed_data = [{**record, field: model} for record, model in zip(parsed_data, nested_models)]
 
         return parsed_data
 

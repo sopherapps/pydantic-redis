@@ -14,11 +14,26 @@ class Store(_AbstractStore):
     """
     models: Dict[str, type(Model)] = {}
 
-    def __init__(self, name: str, redis_config: RedisConfig, redis_store: Optional[redis.Redis] = None,
-                 life_span_in_seconds: Optional[int] = None, **data: Any):
-        super().__init__(name=name, redis_config=redis_config, redis_store=redis_store,
-                         life_span_in_seconds=life_span_in_seconds, **data)
-        self.redis_store = redis.Redis(**self.redis_config.dict())
+    def __init__(
+            self,
+            name: str,
+            redis_config: RedisConfig,
+            redis_store: Optional[redis.Redis] = None,
+            life_span_in_seconds: Optional[int] = None,
+            **data: Any
+    ):
+        super().__init__(
+            name=name,
+            redis_config=redis_config,
+            redis_store=redis_store,
+            life_span_in_seconds=life_span_in_seconds,
+            **data)
+
+        self.redis_store = redis.from_url(
+            self.redis_config.redis_url,
+            encoding=self.redis_config.encoding,
+            decode_responses=True,
+        )
 
     def register_model(self, model_class: type(Model)):
         """Registers the model to this store"""

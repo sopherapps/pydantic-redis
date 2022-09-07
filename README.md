@@ -133,7 +133,6 @@ Library.delete(ids=["The Grand Library"])
   git clone https://github.com/sopherapps/pydantic-redis.git && cd pydantic-redis
   ```
 
-- Ensure you have redis server installed and running at port 6379 on your development machine. Follow the [quick start guide](https://redis.io/topics/quickstart) from redis.
 - Create a virtual environment and activate it
 
   ```bash
@@ -146,10 +145,16 @@ Library.delete(ids=["The Grand Library"])
   pip install -r requirements.txt
   ```
 
-- Run the test command
+- Run the tests command
 
   ```bash
-  python -m unittest
+  pytest --benchmark-disable
+  ```
+
+- Run benchmarks
+
+  ```bash
+  pytest --benchmark-compare --benchmark-autosave
   ```
 
 ## ToDo
