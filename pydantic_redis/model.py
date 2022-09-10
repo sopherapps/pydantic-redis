@@ -227,6 +227,6 @@ class Model(_AbstractModel):
 
         field_types = typing.get_type_hints(cls)
         return [
-            f"__{k}" if issubclass(field_types.get(k, None), Model) else k
+            f"__{k}" if isinstance(field_types.get(k, None), type(Model)) else k
             for k in columns
         ]
