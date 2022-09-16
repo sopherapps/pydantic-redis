@@ -42,12 +42,12 @@ books = [
 ]
 
 redis_store_fixture = [(lazy_fixture("redis_store"))]
-books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
+books_fixture = [(lazy_fixture("redis_store"), book) for book in books[-1:]]
 update_books_fixture = [
     (lazy_fixture("redis_store"), book.title, {"author": authors["jane"], "in_stock": not book.in_stock})
-    for book in books
+    for book in books[-1:]
 ]
-delete_books_fixture = [(lazy_fixture("redis_store"), book.title) for book in books]
+delete_books_fixture = [(lazy_fixture("redis_store"), book.title) for book in books[-1:]]
 
 
 @pytest.fixture()

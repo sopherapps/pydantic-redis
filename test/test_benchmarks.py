@@ -11,7 +11,7 @@ def test_benchmark_bulk_insert(benchmark, store):
 
 
 @pytest.mark.parametrize("store, book", books_fixture)
-def test_benchmark_bulk_insert(benchmark, store, book):
+def test_benchmark_single_insert(benchmark, store, book):
     """Benchmarks the single insert operation"""
     benchmark(Book.insert, book)
 
