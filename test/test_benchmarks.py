@@ -46,6 +46,20 @@ def test_benchmark_select_columns_for_some_items(benchmark, store):
     benchmark(Book.select, columns=['title', 'author', 'in_stock'], ids=ids)
 
 
+@pytest.mark.parametrize("store, book", books_fixture)
+def test_benchmark_select_columns_for_one_id(benchmark, store, book):
+    """Benchmarks the select columns for one id operation"""
+    Book.insert(books)
+    benchmark(Book.select, columns=['title', 'author', 'in_stock'], ids=[book.title])
+
+
+@pytest.mark.parametrize("store, book", books_fixture)
+def test_benchmark_select_all_for_one_id(benchmark, store, book):
+    """Benchmarks the select all columns for one id operation"""
+    Book.insert(books)
+    benchmark(Book.select, ids=[book.title])
+
+
 @pytest.mark.parametrize("store, title, data", update_books_fixture)
 def test_benchmark_update(benchmark, store, title, data):
     """Benchmarks the update operation"""
