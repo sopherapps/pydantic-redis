@@ -2,6 +2,8 @@
 
 A simple declarative ORM for Redis
 
+*Note: For a faster ORM with similar features, consider [orredis](https://github.com/sopherapps/orredis) which, under the hood, is built in rust*
+
 ## Main Dependencies
 
 - [Python +3.6](https://www.python.org)
