@@ -25,6 +25,14 @@ class Book(Model):
     in_stock: bool = True
 
 
+class Library(Model):
+  # the _primary_key_field is mandatory
+  _primary_key_field: str = 'name'
+  name: str
+  address: str
+  books: List[Book]
+
+
 authors = {
     "charles": Author(name="Charles Dickens", active_years=(1220, 1280)),
     "jane": Author(name="Jane Austen", active_years=(1580, 1640)),
@@ -41,8 +49,11 @@ books = [
          tags=["Classic", "Romance"]),
 ]
 
+library = Library(name='Babel Library', address='In a book', books=books)
+
 redis_store_fixture = [(lazy_fixture("redis_store"))]
 books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
+library_fixture = [(lazy_fixture("redis_store"), library)]
 update_books_fixture = [
     (lazy_fixture("redis_store"), book.title, {"author": authors["jane"], "in_stock": not book.in_stock})
     for book in books
@@ -78,5 +89,6 @@ def redis_store(redis_server):
     )
     store.register_model(Book)
     store.register_model(Author)
+    store.register_model(Library)
     yield store
     store.redis_store.flushall()

@@ -21,10 +21,6 @@ class _AbstractStore(BaseModel):
         arbitrary_types_allowed = True
         orm_mode = True
 
-def pydantic_serializer(data):
-    if isinstance(data, _AbstractModel):
-        return data.json()
-
 class _AbstractModel(BaseModel):
     """
     An abstract class to help with typings for Model class
@@ -35,7 +31,17 @@ class _AbstractModel(BaseModel):
     @classmethod
     def serialize_partially(cls, data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
-        return {key: orjson.dumps(value, default=pydantic_serializer) for key, value in data.items()}
+        result = {}
+        for key, value in data.items():
+            if type(value) is list and len(value) > 0 and all(isinstance(v, BaseModel)  for v in value):
+                # Add each individual model in the pipeline for insertion
+                for submodel in value:
+                    subcls = submodel.__class__
+                    subcls.insert(submodel)
+                    result[key] = subcls._Model__get_primary_key(getattr(submodel,subcls._primary_key_field))
+            else:
+                result[key] = orjson.dumps(value)
+        return result
 
     @classmethod
     def deserialize_partially(cls, data: Optional[Dict[bytes, Any]]) -> Dict[str, Any]:
