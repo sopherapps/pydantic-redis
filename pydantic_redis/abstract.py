@@ -29,16 +29,33 @@ class _AbstractModel(BaseModel):
     _primary_key_field: str
 
     @classmethod
+    def _serialize_models_list(cls, data: List[BaseModel]) -> List[str]:
+        """Given a list of models, schedules them for insertion and return the list of corresponding primary keys"""
+        primary_keys = []
+        for model in data:
+            subcls = model.__class__
+            subcls.insert(model)
+            primary_keys.append(subcls._Model__get_primary_key(getattr(model,subcls._primary_key_field)))
+        return orjson.dumps(primary_keys)
+
+    @classmethod
+    def _deserialize_models_list(cls, data: List[str], field_name_in_parent) -> List[BaseModel]:
+        key = field_name_in_parent
+        # Inspect datamodel to decide if the value on this key should be even further deserialized (replace primary key by actual values)
+        if key in cls.__fields__ and cls.__fields__[key].annotation.mro()[0] is list and cls.__fields__[key].annotation.mro()[1] is object and cls.__fields__[key].type_ is not str:
+            # Given how the Parent model is defined, a child model in a list should be deserialized
+            if type(data) is list and len(data) > 0 and all(x for x in data):
+                # Indeed, there is data to deserialize (replace primary key by actual values)
+                data = cls.__fields__[key].type_.select(ids=[x.split("%&_")[1] for x in data]) # Not great to split but I'm not sure how to select() with a key, instead I select with an id
+        return data
+
+    @classmethod
     def serialize_partially(cls, data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
         result = {}
         for key, value in data.items():
             if type(value) is list and len(value) > 0 and all(isinstance(v, BaseModel)  for v in value):
-                # Add each individual model in the pipeline for insertion
-                for submodel in value:
-                    subcls = submodel.__class__
-                    subcls.insert(submodel)
-                    result[key] = subcls._Model__get_primary_key(getattr(submodel,subcls._primary_key_field))
+                result[key] = cls._serialize_models_list(value)
             else:
                 result[key] = orjson.dumps(value)
         return result
@@ -46,8 +63,12 @@ class _AbstractModel(BaseModel):
     @classmethod
     def deserialize_partially(cls, data: Optional[Dict[bytes, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
-        return {str(key, "utf-8") if isinstance(key, bytes) else key: orjson.loads(value)
-                for key, value in data.items()}
+        result = {}
+        for key, value in data.items():
+            key = str(key, "utf-8") if isinstance(key, bytes) else key
+            result[key] = orjson.loads(value)
+            result[key] = cls._deserialize_models_list(result[key], key)
+        return result
 
     @classmethod
     def get_primary_key_field(cls):

@@ -127,6 +127,10 @@ def test_update_nested_list_of_models(store):
     assert books is not None
     assert type(books) is list and len(books) == 4
 
+    _library = Library.select()[0]
+    print(_library)
+    assert all(isinstance(x, Book) for x in _library.books)
+
 
 @pytest.mark.parametrize("store", redis_store_fixture)
 def test_select_default(store):
