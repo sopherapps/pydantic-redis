@@ -1,5 +1,7 @@
 # pydantic-redis
 
+[![PyPI version](https://badge.fury.io/py/pydantic-redis.svg)](https://badge.fury.io/py/pydantic-redis) ![CI](https://github.com/sopherapps/pydantic-redis/actions/workflows/ci.yml/badge.svg)
+
 A simple declarative ORM for Redis
 
 *Note: For a faster ORM with similar features, consider [orredis](https://github.com/sopherapps/orredis) which, under the hood, is built in rust*
@@ -167,3 +169,9 @@ Library.delete(ids=["The Grand Library"])
 ## License
 
 Copyright (c) 2020 [Martin Ahindura](https://github.com/Tinitto) Licensed under the [MIT License](./LICENSE)
+
+## Gratitude
+
+All glory be to God
+
+<a href="https://www.buymeacoffee.com/martinahinJ" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
