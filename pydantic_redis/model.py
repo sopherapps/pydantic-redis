@@ -96,10 +96,11 @@ class Model(_AbstractModel):
             keys = (cls.__get_primary_key(primary_key_value=primary_key) for primary_key in ids)
 
         with cls._store.redis_store.pipeline() as pipeline:
-            for key in keys:
-                if columns is None:
+            if columns is None:
+                for key in keys:
                     pipeline.hgetall(name=key)
-                else:
+            else:
+                for key in keys:
                     pipeline.hmget(name=key, keys=columns)
 
             response = pipeline.execute()
@@ -227,6 +228,6 @@ class Model(_AbstractModel):
 
         field_types = typing.get_type_hints(cls)
         return [
-            f"__{k}" if issubclass(field_types.get(k, None), Model) else k
+            f"__{k}" if isinstance(field_types.get(k, None), type(Model)) else k
             for k in columns
         ]
