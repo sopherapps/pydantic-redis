@@ -1,6 +1,7 @@
 """Module containing the model classes"""
 import typing
 from typing import Optional, List, Any, Union, Dict
+from pydantic import BaseModel
 
 from redis.client import Pipeline
 
@@ -133,9 +134,13 @@ class Model(_AbstractModel):
                 field = key.lstrip("__")
                 ids = [record.pop(key, None) for record in parsed_data]
                 # a bulk network request might be faster than eagerly loading for each record for many records
-                nested_models = model.select(ids=ids)
+                mro = model.mro()
+                type_ = cls.__fields__[field].type_
+                if mro[0] is list and mro[1] is object and type_ is not str:
+                    nested_models = [type_.select(ids=_ids) for _ids in ids]
+                else:
+                    nested_models = model.select(ids=ids)
                 parsed_data = [{**record, field: model} for record, model in zip(parsed_data, nested_models)]
-
         return parsed_data
 
     @classmethod
@@ -206,11 +211,18 @@ class Model(_AbstractModel):
 
         for k, v in data:
             key, value = k, v
-
-            if isinstance(v, Model):
+            if isinstance(value, List) and all(isinstance(d, BaseModel) for d in value):
+                primary_keys = []
+                for submodel in value:
+                    new_key = submodel.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=submodel, life_span=life_span)
+                    primary_keys.append(new_key)
+                key = f"__{key}"
+                value = primary_keys
+            elif isinstance(v, Model):
                 key = f"__{key}"
                 value = v.__class__.__insert_on_pipeline(
                     _id=None, pipeline=pipeline, record=v, life_span=life_span)
+
 
             new_data[key] = value
         return new_data
