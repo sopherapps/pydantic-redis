@@ -1,6 +1,6 @@
 import socket
 from datetime import date
-from typing import Tuple, List
+from typing import Set, Tuple, List
 
 import pytest
 import redislite
@@ -32,6 +32,16 @@ class Library(Model):
   address: str
   books: List[Book]
 
+class BooksToRead(Model):
+ _primary_key_field: str = 'name'
+ name: str
+ books: Set[Book]
+
+class BooksBasket(Model):
+ _primary_key_field: str = 'name'
+ name: str
+ books: Tuple[Book, ...]
+
 
 authors = {
     "charles": Author(name="Charles Dickens", active_years=(1220, 1280)),
@@ -50,6 +60,10 @@ books = [
 ]
 
 library = Library(name='Babel Library', address='In a book', books=books)
+
+books_to_read = BooksToRead(name='Book of Charles', books={books[0], books[1], books[2]})
+
+books_basket = BooksBasket(name='Shopping from the library', books=(books[0], books[2], books[3]))
 
 redis_store_fixture = [(lazy_fixture("redis_store"))]
 books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
@@ -90,5 +104,7 @@ def redis_store(redis_server):
     store.register_model(Book)
     store.register_model(Author)
     store.register_model(Library)
+    store.register_model(BooksToRead)
+    store.register_model(BooksBasket)
     yield store
     store.redis_store.flushall()

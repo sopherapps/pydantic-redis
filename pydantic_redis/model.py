@@ -1,18 +1,23 @@
 """Module containing the model classes"""
 import typing
-from typing import Optional, List, Any, Union, Dict
-from pydantic import BaseModel
+from typing import Optional, List, Any, Set, Tuple, Union, Dict
 
 from redis.client import Pipeline
 
 from pydantic_redis.abstract import _AbstractModel
 
+NESTED_MODEL_PREFIX = "__"
+IN_LIST_NESTED_MODEL_PREFIX = "__%&l_"
+IN_SET_NESTED_MODEL_PREFIX = "__%&s_" # Ensure uniqueness at insertion/query time
+# IN_DICT_NESTED_MODEL_PREFIX = "__%&d_" # Not implemented yet. How keys should be handled?
+IN_TUPLE_NESTED_MODEL_PREFIX = "__%&t_"
+
 
 class Model(_AbstractModel):
+
     """
     The section in the store that saves rows of the same kind
     """
-
     @classmethod
     def __get_primary_key(cls, primary_key_value: Any):
         """
@@ -125,21 +130,37 @@ class Model(_AbstractModel):
         parsed_data = [cls.deserialize_partially(record) for record in data if record != {}]
         if len(parsed_data) > 0:
             field_types = typing.get_type_hints(cls)
-            nested_model_map: Dict[str, typing.Type[Model]] = {
-                k: field_types.get(k.lstrip("__"))
-                for k in parsed_data[0].keys() if k.startswith("__")
-            }
+            nested_model_map: Dict[str, typing.Type[Model]] = {}
 
+            for k in parsed_data[0].keys():
+                if k.startswith(IN_LIST_NESTED_MODEL_PREFIX):
+                    nested_model_map[k] = field_types.get(k.lstrip(IN_LIST_NESTED_MODEL_PREFIX))
+                elif k.startswith(IN_SET_NESTED_MODEL_PREFIX):
+                    nested_model_map[k] = field_types.get(k.lstrip(IN_SET_NESTED_MODEL_PREFIX))
+                elif k.startswith(IN_TUPLE_NESTED_MODEL_PREFIX):
+                    nested_model_map[k] = field_types.get(k.lstrip(IN_TUPLE_NESTED_MODEL_PREFIX))
+                elif k.startswith(NESTED_MODEL_PREFIX):
+                    nested_model_map[k] = field_types.get(k.lstrip(NESTED_MODEL_PREFIX))
+
+            # a bulk network request might be faster than eagerly loading for each record for many records
             for key, model in nested_model_map.items():
-                field = key.lstrip("__")
                 ids = [record.pop(key, None) for record in parsed_data]
-                # a bulk network request might be faster than eagerly loading for each record for many records
-                mro = model.mro()
-                type_ = cls.__fields__[field].type_
-                if mro[0] is list and mro[1] is object and type_ is not str:
+                if key.startswith(IN_LIST_NESTED_MODEL_PREFIX):
+                    field = key.lstrip(IN_LIST_NESTED_MODEL_PREFIX)
+                    type_ = cls.__fields__[field].type_
                     nested_models = [type_.select(ids=_ids) for _ids in ids]
+                elif key.startswith(IN_SET_NESTED_MODEL_PREFIX):
+                    field = key.lstrip(IN_SET_NESTED_MODEL_PREFIX)
+                    type_ = cls.__fields__[field].type_
+                    nested_models = [set(type_.select(ids=_ids)) for _ids in ids]
+                elif key.startswith(IN_TUPLE_NESTED_MODEL_PREFIX):
+                    field = key.lstrip(IN_TUPLE_NESTED_MODEL_PREFIX)
+                    type_ = cls.__fields__[field].type_
+                    nested_models = [tuple(type_.select(ids=_ids)) for _ids in ids]
                 else:
+                    field = key.lstrip(NESTED_MODEL_PREFIX)
                     nested_models = model.select(ids=ids)
+
                 parsed_data = [{**record, field: model} for record, model in zip(parsed_data, nested_models)]
         return parsed_data
 
@@ -203,7 +224,7 @@ class Model(_AbstractModel):
         Returns a dictionary that can be serialized.
         A few cleanups it does include:
           - Upserting any nested records in `record`
-          - Replacing the keys of nested records with their `__` suffixed versions e.g. `__author` instead of author
+          - Replacing the keys of nested records with their NESTED_MODEL_PREFIX suffixed versions e.g. `__author` instead of author
           - Replacing the values of nested records with their foreign keys
         """
         data = record.items() if isinstance(record, dict) else record
@@ -211,19 +232,18 @@ class Model(_AbstractModel):
 
         for k, v in data:
             key, value = k, v
-            if isinstance(value, List) and all(isinstance(d, BaseModel) for d in value):
-                primary_keys = []
-                for submodel in value:
-                    new_key = submodel.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=submodel, life_span=life_span)
-                    primary_keys.append(new_key)
-                key = f"__{key}"
-                value = primary_keys
+            if isinstance(value, List) and all(isinstance(item, Model) for item in value):
+                value = [item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value]
+                key = f"{IN_LIST_NESTED_MODEL_PREFIX}{key}"
+            elif isinstance(value, Set) and all(isinstance(item, Model) for item in value):
+                value = {item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value}
+                key = f"{IN_SET_NESTED_MODEL_PREFIX}{key}"
+            elif isinstance(value, Tuple) and all(isinstance(item, Model) for item in value):
+                value = *(item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value),
+                key = f"{IN_TUPLE_NESTED_MODEL_PREFIX}{key}"
             elif isinstance(v, Model):
-                key = f"__{key}"
-                value = v.__class__.__insert_on_pipeline(
-                    _id=None, pipeline=pipeline, record=v, life_span=life_span)
-
-
+                key = f"{NESTED_MODEL_PREFIX}{key}"
+                value = v.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=v, life_span=life_span)
             new_data[key] = value
         return new_data
 
@@ -239,6 +259,10 @@ class Model(_AbstractModel):
 
         field_types = typing.get_type_hints(cls)
         return [
-            f"__{k}" if issubclass(field_types.get(k, None), Model) else k
+            f"{NESTED_MODEL_PREFIX}{k}" if issubclass(field_types.get(k, None), Model) else k
             for k in columns
         ]
+
+    
+    def __hash__(self):
+        return hash(getattr(self, self.get_primary_key_field()))

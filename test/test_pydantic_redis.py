@@ -1,12 +1,12 @@
 """Tests for the redis orm"""
 
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 
 import pytest
 
 from pydantic_redis.config import RedisConfig
 from pydantic_redis.model import Model
-from test.conftest import Book, redis_store_fixture, books, authors, Author, Library, library
+from test.conftest import redis_store_fixture, Book, books, Author, authors, Library, library, BooksToRead, books_to_read, BooksBasket, books_basket
 
 def test_redis_config_redis_url():
     password = "password"
@@ -124,12 +124,34 @@ def test_insert_single_nested(store):
 def test_update_nested_list_of_models(store):
     Library.insert(library)
     books = Book.select()
-    assert books is not None
     assert type(books) is list and len(books) == 4
 
     _library = Library.select()[0]
-    print(_library)
     assert all(isinstance(x, Book) for x in _library.books)
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_nested_set_of_models(store):
+    BooksToRead.insert(books_to_read)
+    books: List[Book] = Book.select()
+    assert type(books) is list and len(books) == 3
+    assert all(book.author.name == "Charles Dickens" for book in books)
+
+    _books_to_read = BooksToRead.select()[0]
+    assert isinstance(_books_to_read.books, set)
+    assert len(_books_to_read.books) == 3
+    assert all(isinstance(x, Book) for x in _books_to_read.books)
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_nested_tuple_of_models(store):
+    BooksBasket.insert(books_basket)
+    books: List[Book] = Book.select()
+    assert type(books) is list and len(books) == 3
+    _books_basket = BooksBasket.select()[0]
+    assert isinstance(_books_basket.books, tuple)
+    assert len(_books_basket.books) == 3
+    assert all(isinstance(x, Book) for x in _books_basket.books)
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
