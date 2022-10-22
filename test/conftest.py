@@ -37,10 +37,20 @@ class BooksToRead(Model):
  name: str
  books: Set[Book]
 
-class BooksBasket(Model):
+class Basket(Model):
  _primary_key_field: str = 'name'
  name: str
- books: Tuple[Book, ...]
+ books: Tuple[Book, ...] # a tuple of repetetive models
+ 
+class DVD(Model):
+ _primary_key_field: str = 'name'
+ name: str
+ year: int
+
+class DVDBox(Model):
+ _primary_key_field: str = 'name'
+ name: str
+ content: Tuple[Book, DVD] # a tuple of different models
 
 
 authors = {
@@ -63,7 +73,11 @@ library = Library(name='Babel Library', address='In a book', books=books)
 
 books_to_read = BooksToRead(name='Book of Charles', books={books[0], books[1], books[2]})
 
-books_basket = BooksBasket(name='Shopping from the library', books=(books[0], books[2], books[3]))
+basket = Basket(name='Shopping from the library', books=(books[0], books[2], books[3]))
+
+lyrics_book = Book(title="Lyrics", author=Author(name='Linkin Park', active_years=(1996, 2022)), published_on=date(year=1997, month=1, day=1), rating=4.0, tags=["Rock", "Pop Rock", "Metal", "Folk Rock", "Rap Rock"])
+dvd = DVD(name="Xero", year=1997)
+dvd_box = DVDBox(name='Linkin park dvd box', content=(lyrics_book, dvd))
 
 redis_store_fixture = [(lazy_fixture("redis_store"))]
 books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
@@ -105,6 +119,8 @@ def redis_store(redis_server):
     store.register_model(Author)
     store.register_model(Library)
     store.register_model(BooksToRead)
-    store.register_model(BooksBasket)
+    store.register_model(Basket)
+    store.register_model(DVD)
+    store.register_model(DVDBox)
     yield store
     store.redis_store.flushall()

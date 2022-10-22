@@ -6,7 +6,7 @@ import pytest
 
 from pydantic_redis.config import RedisConfig
 from pydantic_redis.model import Model
-from test.conftest import redis_store_fixture, Book, books, Author, authors, Library, library, BooksToRead, books_to_read, BooksBasket, books_basket
+from test.conftest import redis_store_fixture, Book, books, Author, authors, Library, library, BooksToRead, books_to_read, Basket, basket, DVDBox, dvd_box, DVD
 
 def test_redis_config_redis_url():
     password = "password"
@@ -145,13 +145,27 @@ def test_update_nested_set_of_models(store):
 
 @pytest.mark.parametrize("store", redis_store_fixture)
 def test_update_nested_tuple_of_models(store):
-    BooksBasket.insert(books_basket)
+    Basket.insert(basket)
     books: List[Book] = Book.select()
     assert type(books) is list and len(books) == 3
-    _books_basket = BooksBasket.select()[0]
-    assert isinstance(_books_basket.books, tuple)
-    assert len(_books_basket.books) == 3
-    assert all(isinstance(x, Book) for x in _books_basket.books)
+    _basket = Basket.select()[0]
+    assert isinstance(_basket.books, tuple)
+    assert len(_basket.books) == 3
+    assert all(isinstance(x, Book) for x in _basket.books)
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_nested_tuple_of_different_models(store):
+    DVDBox.insert(dvd_box)
+    books: List[Book] = Book.select()
+    assert type(books) is list and len(books) == 1
+    dvds: List[DVD] = DVD.select()
+    assert type(dvds) is list and len(dvds) == 1
+
+    _dvdbox = DVDBox.select()[0]
+    assert isinstance(_dvdbox.content, tuple)
+    assert len(_dvdbox.content) == 2
+    assert isinstance(_dvdbox.content[0], Book)
+    assert isinstance(_dvdbox.content[1], DVD)
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)

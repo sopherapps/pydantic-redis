@@ -156,7 +156,7 @@ class Model(_AbstractModel):
                 elif key.startswith(IN_TUPLE_NESTED_MODEL_PREFIX):
                     field = key.lstrip(IN_TUPLE_NESTED_MODEL_PREFIX)
                     type_ = cls.__fields__[field].type_
-                    nested_models = [tuple(type_.select(ids=_ids)) for _ids in ids]
+                    nested_models = [tuple(type_.select(ids=_ids)) for _ids in ids] # Does not support different model in the same Tuple
                 else:
                     field = key.lstrip(NESTED_MODEL_PREFIX)
                     nested_models = model.select(ids=ids)
