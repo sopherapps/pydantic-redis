@@ -249,6 +249,3 @@ class Model(_AbstractModel):
     def _is_nested_model(parent_class: _AbstractModel, field_name: str):
         field_type = parent_class.__fields__[field_name].type_
         return inspect.isclass(field_type) and issubclass(field_type, Model)
-
-    def __hash__(self):
-        return hash(getattr(self, self.get_primary_key_field()))
