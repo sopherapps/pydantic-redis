@@ -142,8 +142,7 @@ class Model(_AbstractModel):
                 if key.startswith(IN_LIST_NESTED_MODEL_PREFIX):
                     field = key.lstrip(IN_LIST_NESTED_MODEL_PREFIX)
                     type_ = cls.__fields__[field].type_
-                    is_nested_model = Model._is_nested_model(cls, field)
-                    nested_models = [type_.select(ids=_ids) for _ids in ids]  if is_nested_model else ids
+                    nested_models = [type_.select(ids=_ids) if len(_ids) > 0 else [] for _ids in ids]
                 else:
                     field = key.lstrip(NESTED_MODEL_PREFIX)
                     nested_models = model.select(ids=ids)
@@ -219,8 +218,7 @@ class Model(_AbstractModel):
 
         for k, v in data:
             key, value = k, v
-            is_inherited_model = Model._is_nested_model(cls, key)
-            if isinstance(value, List) and is_inherited_model:
+            if isinstance(value, List) and Model._is_nested_model(cls, key):
                 value = [item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value]
                 key = f"{IN_LIST_NESTED_MODEL_PREFIX}{key}"
             elif isinstance(v, Model):
