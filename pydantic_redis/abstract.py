@@ -1,5 +1,5 @@
 """Module containing the main base classes"""
-from typing import Optional, Union, Any, Dict, List
+from typing import Optional, Union, Any, Dict, List, Callable
 
 import orjson
 import redis
@@ -62,7 +62,7 @@ class _AbstractModel(BaseModel):
 
     @staticmethod
     def _default_json_dump(obj):
-        if isinstance(obj, BaseModel):
+        if hasattr(obj, "json") and isinstance(obj.json, Callable):
             return obj.json()
         elif isinstance(obj, set):
             # Set does not exist in JSON. It's fine to use list instead, it becomes a Set when deserializing.

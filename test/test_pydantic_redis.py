@@ -1,12 +1,12 @@
 """Tests for the redis orm"""
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any
 
 import pytest
 
 from pydantic_redis.config import RedisConfig
 from pydantic_redis.model import Model
-from test.conftest import redis_store_fixture, Book, books, Author, authors, Library, library, BooksToRead, books_to_read, Basket, basket, DVDBox, dvd_box, DVD
+from test.conftest import redis_store_fixture, Book, books, Author, authors, Library, library
 
 def test_redis_config_redis_url():
     password = "password"
@@ -128,45 +128,6 @@ def test_update_nested_list_of_models(store):
 
     _library = Library.select()[0]
     assert all(isinstance(x, Book) for x in _library.books)
-
-
-@pytest.mark.parametrize("store", redis_store_fixture)
-def test_update_nested_set_of_models(store):
-    BooksToRead.insert(books_to_read)
-    books: List[Book] = Book.select()
-    assert type(books) is list and len(books) == 3
-    assert all(book.author.name == "Charles Dickens" for book in books)
-
-    _books_to_read = BooksToRead.select()[0]
-    assert isinstance(_books_to_read.books, set)
-    assert len(_books_to_read.books) == 3
-    assert all(isinstance(x, Book) for x in _books_to_read.books)
-
-
-@pytest.mark.parametrize("store", redis_store_fixture)
-def test_update_nested_tuple_of_models(store):
-    Basket.insert(basket)
-    books: List[Book] = Book.select()
-    assert type(books) is list and len(books) == 3
-    _basket = Basket.select()[0]
-    assert isinstance(_basket.books, tuple)
-    assert len(_basket.books) == 3
-    assert all(isinstance(x, Book) for x in _basket.books)
-
-@pytest.mark.parametrize("store", redis_store_fixture)
-def test_update_nested_tuple_of_different_models(store):
-    DVDBox.insert(dvd_box)
-    books: List[Book] = Book.select()
-    assert type(books) is list and len(books) == 1
-    dvds: List[DVD] = DVD.select()
-    assert type(dvds) is list and len(dvds) == 1
-
-    _dvdbox = DVDBox.select()[0]
-    assert isinstance(_dvdbox.content, tuple)
-    assert len(_dvdbox.content) == 2
-    assert isinstance(_dvdbox.content[0], Book)
-    assert isinstance(_dvdbox.content[1], DVD)
-
 
 @pytest.mark.parametrize("store", redis_store_fixture)
 def test_select_default(store):

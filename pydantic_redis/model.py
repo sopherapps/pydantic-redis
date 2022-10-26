@@ -1,6 +1,7 @@
 """Module containing the model classes"""
 import typing
-from typing import Optional, List, Any, Set, Tuple, Union, Dict
+import inspect
+from typing import Optional, List, Any, Union, Dict
 
 from redis.client import Pipeline
 
@@ -8,9 +9,6 @@ from pydantic_redis.abstract import _AbstractModel
 
 NESTED_MODEL_PREFIX = "__"
 IN_LIST_NESTED_MODEL_PREFIX = "__%&l_"
-IN_SET_NESTED_MODEL_PREFIX = "__%&s_" # Ensure uniqueness at insertion/query time
-# IN_DICT_NESTED_MODEL_PREFIX = "__%&d_" # Not implemented yet. How keys should be handled?
-IN_TUPLE_NESTED_MODEL_PREFIX = "__%&t_"
 
 
 class Model(_AbstractModel):
@@ -135,10 +133,6 @@ class Model(_AbstractModel):
             for k in parsed_data[0].keys():
                 if k.startswith(IN_LIST_NESTED_MODEL_PREFIX):
                     nested_model_map[k] = field_types.get(k.lstrip(IN_LIST_NESTED_MODEL_PREFIX))
-                elif k.startswith(IN_SET_NESTED_MODEL_PREFIX):
-                    nested_model_map[k] = field_types.get(k.lstrip(IN_SET_NESTED_MODEL_PREFIX))
-                elif k.startswith(IN_TUPLE_NESTED_MODEL_PREFIX):
-                    nested_model_map[k] = field_types.get(k.lstrip(IN_TUPLE_NESTED_MODEL_PREFIX))
                 elif k.startswith(NESTED_MODEL_PREFIX):
                     nested_model_map[k] = field_types.get(k.lstrip(NESTED_MODEL_PREFIX))
 
@@ -148,15 +142,8 @@ class Model(_AbstractModel):
                 if key.startswith(IN_LIST_NESTED_MODEL_PREFIX):
                     field = key.lstrip(IN_LIST_NESTED_MODEL_PREFIX)
                     type_ = cls.__fields__[field].type_
-                    nested_models = [type_.select(ids=_ids) for _ids in ids]
-                elif key.startswith(IN_SET_NESTED_MODEL_PREFIX):
-                    field = key.lstrip(IN_SET_NESTED_MODEL_PREFIX)
-                    type_ = cls.__fields__[field].type_
-                    nested_models = [set(type_.select(ids=_ids)) for _ids in ids]
-                elif key.startswith(IN_TUPLE_NESTED_MODEL_PREFIX):
-                    field = key.lstrip(IN_TUPLE_NESTED_MODEL_PREFIX)
-                    type_ = cls.__fields__[field].type_
-                    nested_models = [tuple(type_.select(ids=_ids)) for _ids in ids] # Does not support different model in the same Tuple
+                    is_nested_model = Model._is_nested_model(cls, field)
+                    nested_models = [type_.select(ids=_ids) for _ids in ids]  if is_nested_model else ids
                 else:
                     field = key.lstrip(NESTED_MODEL_PREFIX)
                     nested_models = model.select(ids=ids)
@@ -232,15 +219,10 @@ class Model(_AbstractModel):
 
         for k, v in data:
             key, value = k, v
-            if isinstance(value, List) and all(isinstance(item, Model) for item in value):
+            is_inherited_model = Model._is_nested_model(cls, key)
+            if isinstance(value, List) and is_inherited_model:
                 value = [item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value]
                 key = f"{IN_LIST_NESTED_MODEL_PREFIX}{key}"
-            elif isinstance(value, Set) and all(isinstance(item, Model) for item in value):
-                value = {item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value}
-                key = f"{IN_SET_NESTED_MODEL_PREFIX}{key}"
-            elif isinstance(value, Tuple) and all(isinstance(item, Model) for item in value):
-                value = *(item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value),
-                key = f"{IN_TUPLE_NESTED_MODEL_PREFIX}{key}"
             elif isinstance(v, Model):
                 key = f"{NESTED_MODEL_PREFIX}{key}"
                 value = v.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=v, life_span=life_span)
@@ -263,6 +245,10 @@ class Model(_AbstractModel):
             for k in columns
         ]
 
-    
+    @staticmethod
+    def _is_nested_model(parent_class: _AbstractModel, field_name: str):
+        field_type = parent_class.__fields__[field_name].type_
+        return inspect.isclass(field_type) and issubclass(field_type, Model)
+
     def __hash__(self):
         return hash(getattr(self, self.get_primary_key_field()))
