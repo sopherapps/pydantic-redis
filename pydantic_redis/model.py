@@ -100,10 +100,11 @@ class Model(_AbstractModel):
             keys = (cls.__get_primary_key(primary_key_value=primary_key) for primary_key in ids)
 
         with cls._store.redis_store.pipeline() as pipeline:
-            for key in keys:
-                if columns is None:
+            if columns is None:
+                for key in keys:
                     pipeline.hgetall(name=key)
-                else:
+            else:
+                for key in keys:
                     pipeline.hmget(name=key, keys=columns)
 
             response = pipeline.execute()
