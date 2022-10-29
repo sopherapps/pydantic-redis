@@ -1,6 +1,5 @@
 """Module containing the model classes"""
 import typing
-import inspect
 from typing import Optional, List, Any, Union, Dict
 
 from redis.client import Pipeline
@@ -129,27 +128,52 @@ class Model(_AbstractModel):
         parsed_data = [cls.deserialize_partially(record) for record in data if record != {}]
         if len(parsed_data) > 0:
             field_types = typing.get_type_hints(cls)
-            nested_model_map: Dict[str, typing.Type[Model]] = {}
+            keys = [*parsed_data[0].keys()]
 
-            for k in parsed_data[0].keys():
+            for k in keys:
                 if k.startswith(IN_LIST_NESTED_MODEL_PREFIX):
-                    nested_model_map[k] = field_types.get(k.lstrip(IN_LIST_NESTED_MODEL_PREFIX))
+                    cls.__eager_load_nested_model_lists(prefixed_field=k, data=parsed_data,
+                                                        field_types=field_types)
+
                 elif k.startswith(NESTED_MODEL_PREFIX):
-                    nested_model_map[k] = field_types.get(k.lstrip(NESTED_MODEL_PREFIX))
-
-            # a bulk network request might be faster than eagerly loading for each record for many records
-            for key, model in nested_model_map.items():
-                ids = [record.pop(key, None) for record in parsed_data]
-                if key.startswith(IN_LIST_NESTED_MODEL_PREFIX):
-                    field = key.lstrip(IN_LIST_NESTED_MODEL_PREFIX)
-                    type_ = cls.__fields__[field].type_
-                    nested_models = [type_.select(ids=_ids) if len(_ids) > 0 else [] for _ids in ids]
-                else:
-                    field = key.lstrip(NESTED_MODEL_PREFIX)
-                    nested_models = model.select(ids=ids)
-
-                parsed_data = [{**record, field: model} for record, model in zip(parsed_data, nested_models)]
+                    cls.__eager_load_nested_models(prefixed_field=k, data=parsed_data,
+                                                   field_types=field_types)
         return parsed_data
+    @classmethod
+    def __eager_load_nested_model_lists(cls, prefixed_field: str, data: List[Dict[str, Any]],
+                                        field_types: Dict[str, Any]):
+        """
+        Eagerly loads any properties that have `List[Model]` as their type annotations
+        for each item in the data such that primary_key lists are replaced by Model lists
+        Note: This mutates the data in-place as a way of optimization
+        For example:
+        [{"___books": ["id1", "id2"]}] becomes [{"books": [Book{"id": "id1", ...}, Book{"id": "id2", ...}]}]
+        """
+        field = prefixed_field.lstrip(IN_LIST_NESTED_MODEL_PREFIX)
+        model_type = field_types.get(field).__args__[0]
+
+        for record in data:
+            ids = record.pop(prefixed_field, None)
+            record[field] = model_type.select(ids=ids)
+
+    @classmethod
+    def __eager_load_nested_models(cls, prefixed_field: str, data: List[Dict[str, Any]], field_types: Dict[str, Any]):
+        """
+        Eagerly loads any properties that have `Model` as their type annotations
+        for each item in the data such that primary_key lists are replaced by Models
+        Note: This mutates the data in-place as a way of optimization
+        For example:
+        [{"__book": "id1"}] becomes [{"book": Book{"id": "id1", ...}}]
+        """
+        field = prefixed_field.lstrip(NESTED_MODEL_PREFIX)
+        model_type = field_types.get(field)
+
+        ids: List[str] = [record.pop(prefixed_field, None) for record in data]
+        # a bulk network request might be faster than eagerly loading for each record for many records
+        nested_models = model_type.select(ids=ids)
+
+        for record, model in zip(data, nested_models):
+            record[field] = model
 
     @classmethod
     def __parse_hmget_response(cls, data: List[List[Any]], columns: List[str]) -> List[Dict[str, Any]]:
@@ -219,9 +243,9 @@ class Model(_AbstractModel):
 
         for k, v in data:
             key, value = k, v
-            if isinstance(value, List) and Model._is_nested_model(cls, key):
-                value = [item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value]
+            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], Model):
                 key = f"{IN_LIST_NESTED_MODEL_PREFIX}{key}"
+                value = [item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value]
             elif isinstance(v, Model):
                 key = f"{NESTED_MODEL_PREFIX}{key}"
                 value = v.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=v, life_span=life_span)
@@ -239,12 +263,16 @@ class Model(_AbstractModel):
             return None
 
         field_types = typing.get_type_hints(cls)
-        return [
-            f"{NESTED_MODEL_PREFIX}{k}" if issubclass(field_types.get(k, None), Model) else k
-            for k in columns
-        ]
 
-    @staticmethod
-    def _is_nested_model(parent_class: _AbstractModel, field_name: str):
-        field_type = parent_class.__fields__[field_name].type_
-        return inspect.isclass(field_type) and issubclass(field_type, Model)
+        fields = []
+        for col in columns:
+            field_type = field_types.get(col, None)
+
+            if isinstance(field_type, type(Model)):
+                fields.append(f"{NESTED_MODEL_PREFIX}{col}")
+            elif issubclass(field_type, List) and isinstance(field_type.__args__[0], type(Model)):
+                fields.append(f"{IN_LIST_NESTED_MODEL_PREFIX}{col}")
+            else:
+                fields.append(col)
+
+        return fields

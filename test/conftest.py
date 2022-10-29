@@ -48,11 +48,12 @@ books = [
          tags=["Classic", "Romance"]),
 ]
 
-library = Library(name='Babel Library', address='In a book', books=books)
-
+libraries = [
+    Library(name='Babel Library', address='In a book', books=books)    
+]
 redis_store_fixture = [(lazy_fixture("redis_store"))]
-library_fixture = [(lazy_fixture("redis_store"), library)]
-books_fixture = [(lazy_fixture("redis_store"), book) for book in books[-1:]]
+books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
+librares_fixture = [(lazy_fixture("redis_store"), libraries)]
 update_books_fixture = [
     (lazy_fixture("redis_store"), book.title, {"author": authors["jane"], "in_stock": not book.in_stock})
     for book in books[-1:]
