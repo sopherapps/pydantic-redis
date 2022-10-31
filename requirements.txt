@@ -7,3 +7,5 @@ pytest-lazy-fixture==0.6.3
 redis==4.3.4
 redislite==6.0.674960
 twine==3.8.0
+black==22.8.0
+pre-commit

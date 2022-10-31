@@ -61,7 +61,9 @@ def test_bulk_insert(store):
         for book_key in book_keys:
             pipeline.hgetall(name=book_key)
         books_in_redis = pipeline.execute()
-    books_in_redis_as_models = [__deserialize_book_data(book) for book in books_in_redis]
+    books_in_redis_as_models = [
+        __deserialize_book_data(book) for book in books_in_redis
+    ]
     assert books == books_in_redis_as_models
 
 
@@ -83,7 +85,9 @@ def test_bulk_nested_insert(store):
             pipeline.hgetall(name=key)
         authors_in_redis = pipeline.execute()
     authors_in_redis_as_models = sorted(
-        [Author(**Author.deserialize_partially(author)) for author in authors_in_redis], key=lambda x: x.name)
+        [Author(**Author.deserialize_partially(author)) for author in authors_in_redis],
+        key=lambda x: x.name,
+    )
     expected = sorted(authors.values(), key=lambda x: x.name)
     assert expected == authors_in_redis_as_models
 
@@ -148,9 +152,9 @@ def test_select_some_columns(store):
     """
     Book.insert(books)
     books_dict = {book.title: book for book in books}
-    columns = ['title', 'author', 'in_stock']
-    response = Book.select(columns=['title', 'author', 'in_stock'])
-    response_dict = {book['title']: book for book in response}
+    columns = ["title", "author", "in_stock"]
+    response = Book.select(columns=["title", "author", "in_stock"])
+    response_dict = {book["title"]: book for book in response}
 
     for title, book in books_dict.items():
         book_in_response = response_dict[title]
@@ -158,7 +162,7 @@ def test_select_some_columns(store):
         assert sorted(book_in_response.keys()) == sorted(columns)
 
         for column in columns:
-            if column == 'author':
+            if column == "author":
                 assert book_in_response[column] == getattr(book, column)
             else:
                 assert f"{book_in_response[column]}" == f"{getattr(book, column)}"
@@ -183,7 +187,7 @@ def test_update(store):
     Book.insert(books)
     title = books[0].title
     new_in_stock = not books[0].in_stock
-    new_author = Author(name='John Doe', active_years=(2000, 2009))
+    new_author = Author(name="John Doe", active_years=(2000, 2009))
     book_key = f"book_%&_{title}"
     new_author_key = f"author_%&_{new_author.name}"
     old_book_data = store.redis_store.hgetall(name=book_key)
@@ -225,7 +229,9 @@ def test_update_nested_model(store):
     assert old_author == books[0].author
     assert old_author != updated_author
 
-    Book.update(_id=books[0].title, data={"author": updated_author, "in_stock": new_in_stock})
+    Book.update(
+        _id=books[0].title, data={"author": updated_author, "in_stock": new_in_stock}
+    )
 
     book_data = store.redis_store.hgetall(name=book_key)
     book = __deserialize_book_data(book_data)
@@ -253,7 +259,9 @@ def test_delete_multiple(store):
 
     keys_to_delete = [f"book_%&_{_id}" for _id in ids_to_delete]
     book_keys_to_leave_intact = [f"book_%&_{_id}" for _id in ids_to_leave_intact]
-    author_keys_to_leave_intact = [f"author_%&_{author.name}" for author in authors.values()]
+    author_keys_to_leave_intact = [
+        f"author_%&_{author.name}" for author in authors.values()
+    ]
 
     Book.delete(ids=ids_to_delete)
 
@@ -265,14 +273,21 @@ def test_delete_multiple(store):
         for key in book_keys_to_leave_intact:
             pipeline.hgetall(name=key)
         books_in_redis = pipeline.execute()
-        books_in_redis_as_models = [__deserialize_book_data(book) for book in books_in_redis]
+        books_in_redis_as_models = [
+            __deserialize_book_data(book) for book in books_in_redis
+        ]
         assert books_left_in_db == books_in_redis_as_models
 
         for key in author_keys_to_leave_intact:
             pipeline.hgetall(name=key)
         authors_in_redis = pipeline.execute()
         authors_in_redis_as_models = sorted(
-            [Author(**Author.deserialize_partially(author)) for author in authors_in_redis], key=lambda x: x.name)
+            [
+                Author(**Author.deserialize_partially(author))
+                for author in authors_in_redis
+            ],
+            key=lambda x: x.name,
+        )
         expected = sorted(authors.values(), key=lambda x: x.name)
         assert expected == authors_in_redis_as_models
 

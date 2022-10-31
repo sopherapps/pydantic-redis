@@ -1,7 +1,14 @@
 """Tests for benchmarks"""
 import pytest
 
-from test.conftest import redis_store_fixture, Book, books, books_fixture, update_books_fixture, delete_books_fixture
+from test.conftest import (
+    redis_store_fixture,
+    Book,
+    books,
+    books_fixture,
+    update_books_fixture,
+    delete_books_fixture,
+)
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
@@ -27,7 +34,7 @@ def test_benchmark_select_default(benchmark, store):
 def test_benchmark_select_columns(benchmark, store):
     """Benchmarks the select columns operation"""
     Book.insert(books)
-    benchmark(Book.select, columns=['title', 'author', 'in_stock'])
+    benchmark(Book.select, columns=["title", "author", "in_stock"])
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
@@ -43,14 +50,14 @@ def test_benchmark_select_columns_for_some_items(benchmark, store):
     """Benchmarks the select columns for some items only operation"""
     Book.insert(books)
     ids = [book.title for book in books[:2]]
-    benchmark(Book.select, columns=['title', 'author', 'in_stock'], ids=ids)
+    benchmark(Book.select, columns=["title", "author", "in_stock"], ids=ids)
 
 
 @pytest.mark.parametrize("store, book", books_fixture)
 def test_benchmark_select_columns_for_one_id(benchmark, store, book):
     """Benchmarks the select columns for one id operation"""
     Book.insert(books)
-    benchmark(Book.select, columns=['title', 'author', 'in_stock'], ids=[book.title])
+    benchmark(Book.select, columns=["title", "author", "in_stock"], ids=[book.title])
 
 
 @pytest.mark.parametrize("store, book", books_fixture)

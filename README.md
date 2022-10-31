@@ -149,6 +149,12 @@ Library.delete(ids=["The Grand Library"])
   pip install -r requirements.txt
   ```
 
+- Run the pre-commit installation
+
+  ```bash
+  pre-commit install
+  ```
+
 - Run the tests command
 
   ```bash
@@ -161,16 +167,17 @@ Library.delete(ids=["The Grand Library"])
   pytest --benchmark-compare --benchmark-autosave
   ```
 
-## ToDo
-
-- [ ] Add parsed filtering e.g. title < r
-- [ ] Add pubsub such that for each table, there is a channel for each mutation e.g. table_name**insert, table_name**update, table_name\_\_delete such that code can just subscribe to an given table's mutation and be updated each time a mutation occurs
-
 ## License
 
 Copyright (c) 2020 [Martin Ahindura](https://github.com/Tinitto) Licensed under the [MIT License](./LICENSE)
 
 ## Gratitude
+
+> "There is no condemnation now for those who live in union with Christ Jesus.
+> For the law of the Spirit, which brings us life in union with Christ Jesus,
+> has set me free from the law of sin and death"
+>
+> -- Romans 8: 1-2
 
 All glory be to God
 
