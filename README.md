@@ -149,6 +149,12 @@ Library.delete(ids=["The Grand Library"])
   pip install -r requirements.txt
   ```
 
+- Run the pre-commit installation
+
+  ```bash
+  pre-commit install
+  ```
+
 - Run the tests command
 
   ```bash

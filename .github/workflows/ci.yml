@@ -32,6 +32,8 @@ jobs:
           python -m pip install --upgrade pip
           python --version
           pip install -r requirements.txt
+      - name: Lint with black
+        run: black --check .
       - name: Run tests
         run: |
           cd $GITHUB_WORKSPACE
