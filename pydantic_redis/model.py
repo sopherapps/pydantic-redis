@@ -27,11 +27,19 @@ class Model(_AbstractModel):
         return f"{table_name}__index"
 
     @classmethod
-    def insert(cls, data: Union[List[_AbstractModel], _AbstractModel], life_span_seconds: Optional[float] = None):
+    def insert(
+        cls,
+        data: Union[List[_AbstractModel], _AbstractModel],
+        life_span_seconds: Optional[float] = None,
+    ):
         """
         Inserts a given row or sets of rows into the table
         """
-        life_span = life_span_seconds if life_span_seconds is not None else cls._store.life_span_in_seconds
+        life_span = (
+            life_span_seconds
+            if life_span_seconds is not None
+            else cls._store.life_span_in_seconds
+        )
         with cls._store.redis_store.pipeline(transaction=True) as pipeline:
             data_list = []
 
@@ -41,20 +49,29 @@ class Model(_AbstractModel):
                 data_list = [data]
 
             for record in data_list:
-                cls.__insert_on_pipeline(_id=None, pipeline=pipeline, record=record, life_span=life_span)
+                cls.__insert_on_pipeline(
+                    _id=None, pipeline=pipeline, record=record, life_span=life_span
+                )
 
             return pipeline.execute()
 
     @classmethod
-    def update(cls, _id: Any, data: Dict[str, Any],
-               life_span_seconds: Optional[float] = None):
+    def update(
+        cls, _id: Any, data: Dict[str, Any], life_span_seconds: Optional[float] = None
+    ):
         """
         Updates a given row or sets of rows in the table
         """
-        life_span = life_span_seconds if life_span_seconds is not None else cls._store.life_span_in_seconds
+        life_span = (
+            life_span_seconds
+            if life_span_seconds is not None
+            else cls._store.life_span_in_seconds
+        )
         with cls._store.redis_store.pipeline(transaction=True) as pipeline:
             if isinstance(data, dict):
-                cls.__insert_on_pipeline(_id=_id, pipeline=pipeline, record=data, life_span=life_span)
+                cls.__insert_on_pipeline(
+                    _id=_id, pipeline=pipeline, record=data, life_span=life_span
+                )
 
             return pipeline.execute()
 
@@ -82,8 +99,12 @@ class Model(_AbstractModel):
             return pipeline.execute()
 
     @classmethod
-    def select(cls, columns: Optional[List[str]] = None, ids: Optional[List[Any]] = None,
-               pipeline: Optional[Pipeline] = None):
+    def select(
+        cls,
+        columns: Optional[List[str]] = None,
+        ids: Optional[List[Any]] = None,
+        pipeline: Optional[Pipeline] = None,
+    ):
         """
         Selects given rows or sets of rows in the table
         """
@@ -93,7 +114,10 @@ class Model(_AbstractModel):
             table_index_key = cls.get_table_index_key()
             keys = cls._store.redis_store.sscan_iter(name=table_index_key)
         else:
-            keys = (cls.__get_primary_key(primary_key_value=primary_key) for primary_key in ids)
+            keys = (
+                cls.__get_primary_key(primary_key_value=primary_key)
+                for primary_key in ids
+            )
 
         with cls._store.redis_store.pipeline() as pipeline:
             if columns is None:
@@ -122,12 +146,15 @@ class Model(_AbstractModel):
         Converts a list of dictionaries straight from Redis into a list of normalized dictionaries
         with foreign keys replaced by model instances
         """
-        parsed_data = [cls.deserialize_partially(record) for record in data if record != {}]
+        parsed_data = [
+            cls.deserialize_partially(record) for record in data if record != {}
+        ]
         if len(parsed_data) > 0:
             field_types = typing.get_type_hints(cls)
             nested_model_map: Dict[str, typing.Type[Model]] = {
                 k: field_types.get(k.lstrip("__"))
-                for k in parsed_data[0].keys() if k.startswith("__")
+                for k in parsed_data[0].keys()
+                if k.startswith("__")
             }
 
             for key, model in nested_model_map.items():
@@ -135,21 +162,23 @@ class Model(_AbstractModel):
                 ids = [record.pop(key, None) for record in parsed_data]
                 # a bulk network request might be faster than eagerly loading for each record for many records
                 nested_models = model.select(ids=ids)
-                parsed_data = [{**record, field: model} for record, model in zip(parsed_data, nested_models)]
+                parsed_data = [
+                    {**record, field: model}
+                    for record, model in zip(parsed_data, nested_models)
+                ]
 
         return parsed_data
 
     @classmethod
-    def __parse_hmget_response(cls, data: List[List[Any]], columns: List[str]) -> List[Dict[str, Any]]:
+    def __parse_hmget_response(
+        cls, data: List[List[Any]], columns: List[str]
+    ) -> List[Dict[str, Any]]:
         """
         Converts the response from redis.hmget (a list of lists ordered identically to ``columns``) into a list of
         normalized dictionaries where foreign keys have been replaced by nested models
         """
         dict_list = [
-            {
-                field: record[index]
-                for index, field in enumerate(columns)
-            }
+            {field: record[index] for index, field in enumerate(columns)}
             for record in data
         ]
         return cls.__parse_dict_list(dict_list)
@@ -163,19 +192,22 @@ class Model(_AbstractModel):
         return [cls(**record) for record in parsed_dict_list]
 
     @classmethod
-    def __insert_on_pipeline(cls,
-                             pipeline: Pipeline,
-                             _id: Optional[Any],
-                             record: Union[_AbstractModel, Dict[str, Any]],
-                             life_span: Optional[Union[float, int]] = None
-                             ) -> Any:
+    def __insert_on_pipeline(
+        cls,
+        pipeline: Pipeline,
+        _id: Optional[Any],
+        record: Union[_AbstractModel, Dict[str, Any]],
+        life_span: Optional[Union[float, int]] = None,
+    ) -> Any:
         """
         Creates insert commands for the given record on the given pipeline but does not execute
         thus the data is not yet persisted in redis
         Returns the key of the created item
         """
         key = _id if _id is not None else getattr(record, cls._primary_key_field)
-        data = cls.__get_serializable_dict(pipeline=pipeline, record=record, life_span=life_span)
+        data = cls.__get_serializable_dict(
+            pipeline=pipeline, record=record, life_span=life_span
+        )
         name = cls.__get_primary_key(primary_key_value=key)
         mapping = cls.serialize_partially(data)
         pipeline.hset(name=name, mapping=mapping)
@@ -191,10 +223,12 @@ class Model(_AbstractModel):
         return key
 
     @classmethod
-    def __get_serializable_dict(cls,
-                                pipeline: Pipeline,
-                                record: Union[_AbstractModel, Dict[str, Any]],
-                                life_span: Optional[Union[float, int]] = None) -> Dict[str, Any]:
+    def __get_serializable_dict(
+        cls,
+        pipeline: Pipeline,
+        record: Union[_AbstractModel, Dict[str, Any]],
+        life_span: Optional[Union[float, int]] = None,
+    ) -> Dict[str, Any]:
         """
         Returns a dictionary that can be serialized.
         A few cleanups it does include:
@@ -211,7 +245,8 @@ class Model(_AbstractModel):
             if isinstance(v, Model):
                 key = f"__{key}"
                 value = v.__class__.__insert_on_pipeline(
-                    _id=None, pipeline=pipeline, record=v, life_span=life_span)
+                    _id=None, pipeline=pipeline, record=v, life_span=life_span
+                )
 
             new_data[key] = value
         return new_data

@@ -10,13 +10,13 @@ from pydantic_redis import Store, RedisConfig, Model
 
 
 class Author(Model):
-    _primary_key_field: str = 'name'
+    _primary_key_field: str = "name"
     name: str
     active_years: Tuple[int, int]
 
 
 class Book(Model):
-    _primary_key_field: str = 'title'
+    _primary_key_field: str = "title"
     title: str
     author: Author
     rating: float
@@ -31,23 +31,51 @@ authors = {
 }
 
 books = [
-    Book(title="Oliver Twist", author=authors["charles"], published_on=date(year=1215, month=4, day=4),
-         in_stock=False, rating=2, tags=["Classic"]),
-    Book(title="Great Expectations", author=authors["charles"], published_on=date(year=1220, month=4, day=4), rating=5,
-         tags=["Classic"]),
-    Book(title="Jane Eyre", author=authors["charles"], published_on=date(year=1225, month=6, day=4), in_stock=False,
-         rating=3.4, tags=["Classic", "Romance"]),
-    Book(title="Wuthering Heights", author=authors["jane"], published_on=date(year=1600, month=4, day=4), rating=4.0,
-         tags=["Classic", "Romance"]),
+    Book(
+        title="Oliver Twist",
+        author=authors["charles"],
+        published_on=date(year=1215, month=4, day=4),
+        in_stock=False,
+        rating=2,
+        tags=["Classic"],
+    ),
+    Book(
+        title="Great Expectations",
+        author=authors["charles"],
+        published_on=date(year=1220, month=4, day=4),
+        rating=5,
+        tags=["Classic"],
+    ),
+    Book(
+        title="Jane Eyre",
+        author=authors["charles"],
+        published_on=date(year=1225, month=6, day=4),
+        in_stock=False,
+        rating=3.4,
+        tags=["Classic", "Romance"],
+    ),
+    Book(
+        title="Wuthering Heights",
+        author=authors["jane"],
+        published_on=date(year=1600, month=4, day=4),
+        rating=4.0,
+        tags=["Classic", "Romance"],
+    ),
 ]
 
 redis_store_fixture = [(lazy_fixture("redis_store"))]
 books_fixture = [(lazy_fixture("redis_store"), book) for book in books[-1:]]
 update_books_fixture = [
-    (lazy_fixture("redis_store"), book.title, {"author": authors["jane"], "in_stock": not book.in_stock})
+    (
+        lazy_fixture("redis_store"),
+        book.title,
+        {"author": authors["jane"], "in_stock": not book.in_stock},
+    )
     for book in books[-1:]
 ]
-delete_books_fixture = [(lazy_fixture("redis_store"), book.title) for book in books[-1:]]
+delete_books_fixture = [
+    (lazy_fixture("redis_store"), book.title) for book in books[-1:]
+]
 
 
 @pytest.fixture()

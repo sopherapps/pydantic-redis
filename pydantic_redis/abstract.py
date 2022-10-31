@@ -12,6 +12,7 @@ class _AbstractStore(BaseModel):
     """
     An abstract class of a store
     """
+
     name: str
     redis_config: RedisConfig
     redis_store: Optional[redis.Redis] = None
@@ -26,6 +27,7 @@ class _AbstractModel(BaseModel):
     """
     An abstract class to help with typings for Model class
     """
+
     _store: _AbstractStore
     _primary_key_field: str
 
@@ -37,8 +39,10 @@ class _AbstractModel(BaseModel):
     @classmethod
     def deserialize_partially(cls, data: Optional[Dict[bytes, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
-        return {str(key, "utf-8") if isinstance(key, bytes) else key: orjson.loads(value)
-                for key, value in data.items()}
+        return {
+            str(key, "utf-8") if isinstance(key, bytes) else key: orjson.loads(value)
+            for key, value in data.items()
+        }
 
     @classmethod
     def get_primary_key_field(cls):
@@ -50,7 +54,9 @@ class _AbstractModel(BaseModel):
         raise NotImplementedError("insert should be implemented")
 
     @classmethod
-    def update(cls, primary_key_value: Union[Any, Dict[str, Any]], data: Dict[str, Any]):
+    def update(
+        cls, primary_key_value: Union[Any, Dict[str, Any]], data: Dict[str, Any]
+    ):
         raise NotImplementedError("update should be implemented")
 
     @classmethod
