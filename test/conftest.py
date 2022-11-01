@@ -1,6 +1,6 @@
 import socket
 from datetime import date
-from typing import Tuple, List
+from typing import Set, Tuple, List
 
 import pytest
 import redislite
@@ -23,6 +23,14 @@ class Book(Model):
     published_on: date
     tags: List[str] = []
     in_stock: bool = True
+
+
+class Library(Model):
+    # the _primary_key_field is mandatory
+    _primary_key_field: str = "name"
+    name: str
+    address: str
+    books: List[Book]
 
 
 authors = {
@@ -63,8 +71,10 @@ books = [
     ),
 ]
 
+libraries = [Library(name="Babel Library", address="In a book", books=books)]
 redis_store_fixture = [(lazy_fixture("redis_store"))]
-books_fixture = [(lazy_fixture("redis_store"), book) for book in books[-1:]]
+books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
+librares_fixture = [(lazy_fixture("redis_store"), libraries)]
 update_books_fixture = [
     (
         lazy_fixture("redis_store"),
@@ -106,5 +116,6 @@ def redis_store(redis_server):
     )
     store.register_model(Book)
     store.register_model(Author)
+    store.register_model(Library)
     yield store
     store.redis_store.flushall()

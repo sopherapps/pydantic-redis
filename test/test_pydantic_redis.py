@@ -6,7 +6,15 @@ import pytest
 
 from pydantic_redis.config import RedisConfig
 from pydantic_redis.model import Model
-from test.conftest import Book, redis_store_fixture, books, authors, Author
+from test.conftest import (
+    redis_store_fixture,
+    Book,
+    books,
+    Author,
+    authors,
+    Library,
+    libraries,
+)
 
 
 def test_redis_config_redis_url():
@@ -123,6 +131,18 @@ def test_insert_single_nested(store):
     author = store.redis_store.hgetall(name=key)
     author_as_model = Author(**Author.deserialize_partially(author))
     assert books[0].author == author_as_model
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_nested_list_of_models(store):
+    Library.insert(libraries)
+    got = sorted(Book.select(), key=lambda x: x.title)
+    expected = sorted(books, key=lambda x: x.title)
+    assert expected == got
+
+    got = sorted(Library.select(), key=lambda x: x.name)
+    expected = sorted(libraries, key=lambda x: x.name)
+    assert got == expected
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)

@@ -1,5 +1,5 @@
 """Module containing the main base classes"""
-from typing import Optional, Union, Any, Dict, List
+from typing import Optional, Union, Any, Dict, List, Callable
 
 import orjson
 import redis
@@ -34,7 +34,10 @@ class _AbstractModel(BaseModel):
     @classmethod
     def serialize_partially(cls, data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
-        return {key: orjson.dumps(value) for key, value in data.items()}
+        return {
+            key: orjson.dumps(value, default=_AbstractModel._default_json_dump)
+            for key, value in data.items()
+        }
 
     @classmethod
     def deserialize_partially(cls, data: Optional[Dict[bytes, Any]]) -> Dict[str, Any]:
@@ -67,6 +70,14 @@ class _AbstractModel(BaseModel):
     def select(cls, columns: Optional[List[str]] = None):
         """Should later allow AND, OR"""
         raise NotImplementedError("select should be implemented")
+
+    @staticmethod
+    def _default_json_dump(obj):
+        if hasattr(obj, "json") and isinstance(obj.json, Callable):
+            return obj.json()
+        elif isinstance(obj, set):
+            # Set does not exist in JSON. It's fine to use list instead, it becomes a Set when deserializing.
+            return list(obj)
 
     class Config:
         arbitrary_types_allowed = True
