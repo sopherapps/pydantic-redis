@@ -60,7 +60,7 @@ jobs:
           pip install -r requirements.txt
       - name: Build
         run: |
-          python setup.py sdist bdist_wheel
+          python -m build
       - name: Upload to pypi
         run: |
           twine upload -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} dist/*
