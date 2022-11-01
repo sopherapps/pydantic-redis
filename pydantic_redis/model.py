@@ -15,6 +15,7 @@ class Model(_AbstractModel):
     """
     The section in the store that saves rows of the same kind
     """
+
     @classmethod
     def __get_primary_key(cls, primary_key_value: Any):
         """
@@ -158,16 +159,23 @@ class Model(_AbstractModel):
 
             for k in keys:
                 if k.startswith(IN_LIST_NESTED_MODEL_PREFIX):
-                    cls.__eager_load_nested_model_lists(prefixed_field=k, data=parsed_data,
-                                                        field_types=field_types)
+                    cls.__eager_load_nested_model_lists(
+                        prefixed_field=k, data=parsed_data, field_types=field_types
+                    )
 
                 elif k.startswith(NESTED_MODEL_PREFIX):
-                    cls.__eager_load_nested_models(prefixed_field=k, data=parsed_data,
-                                                   field_types=field_types)
+                    cls.__eager_load_nested_models(
+                        prefixed_field=k, data=parsed_data, field_types=field_types
+                    )
         return parsed_data
+
     @classmethod
-    def __eager_load_nested_model_lists(cls, prefixed_field: str, data: List[Dict[str, Any]],
-                                        field_types: Dict[str, Any]):
+    def __eager_load_nested_model_lists(
+        cls,
+        prefixed_field: str,
+        data: List[Dict[str, Any]],
+        field_types: Dict[str, Any],
+    ):
         """
         Eagerly loads any properties that have `List[Model]` as their type annotations
         for each item in the data such that primary_key lists are replaced by Model lists
@@ -183,7 +191,12 @@ class Model(_AbstractModel):
             record[field] = model_type.select(ids=ids)
 
     @classmethod
-    def __eager_load_nested_models(cls, prefixed_field: str, data: List[Dict[str, Any]], field_types: Dict[str, Any]):
+    def __eager_load_nested_models(
+        cls,
+        prefixed_field: str,
+        data: List[Dict[str, Any]],
+        field_types: Dict[str, Any],
+    ):
         """
         Eagerly loads any properties that have `Model` as their type annotations
         for each item in the data such that primary_key lists are replaced by Models
@@ -276,11 +289,18 @@ class Model(_AbstractModel):
 
             if isinstance(v, list) and len(v) > 0 and isinstance(v[0], Model):
                 key = f"{IN_LIST_NESTED_MODEL_PREFIX}{key}"
-                value = [item.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=item, life_span=life_span) for item in value]
-            
+                value = [
+                    item.__class__.__insert_on_pipeline(
+                        _id=None, pipeline=pipeline, record=item, life_span=life_span
+                    )
+                    for item in value
+                ]
+
             elif isinstance(v, Model):
                 key = f"{NESTED_MODEL_PREFIX}{key}"
-                value = v.__class__.__insert_on_pipeline(_id=None, pipeline=pipeline, record=v, life_span=life_span)
+                value = v.__class__.__insert_on_pipeline(
+                    _id=None, pipeline=pipeline, record=v, life_span=life_span
+                )
             new_data[key] = value
         return new_data
 
@@ -302,7 +322,9 @@ class Model(_AbstractModel):
 
             if isinstance(field_type, type(Model)):
                 fields.append(f"{NESTED_MODEL_PREFIX}{col}")
-            elif issubclass(field_type, List) and isinstance(field_type.__args__[0], type(Model)):
+            elif issubclass(field_type, List) and isinstance(
+                field_type.__args__[0], type(Model)
+            ):
                 fields.append(f"{IN_LIST_NESTED_MODEL_PREFIX}{col}")
             else:
                 fields.append(col)

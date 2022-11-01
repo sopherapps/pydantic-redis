@@ -26,11 +26,12 @@ class Book(Model):
 
 
 class Library(Model):
-  # the _primary_key_field is mandatory
-  _primary_key_field: str = 'name'
-  name: str
-  address: str
-  books: List[Book]
+    # the _primary_key_field is mandatory
+    _primary_key_field: str = "name"
+    name: str
+    address: str
+    books: List[Book]
+
 
 authors = {
     "charles": Author(name="Charles Dickens", active_years=(1220, 1280)),
@@ -70,9 +71,7 @@ books = [
     ),
 ]
 
-libraries = [
-    Library(name='Babel Library', address='In a book', books=books)    
-]
+libraries = [Library(name="Babel Library", address="In a book", books=books)]
 redis_store_fixture = [(lazy_fixture("redis_store"))]
 books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
 librares_fixture = [(lazy_fixture("redis_store"), libraries)]

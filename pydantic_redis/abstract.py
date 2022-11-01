@@ -22,6 +22,7 @@ class _AbstractStore(BaseModel):
         arbitrary_types_allowed = True
         orm_mode = True
 
+
 class _AbstractModel(BaseModel):
     """
     An abstract class to help with typings for Model class
@@ -33,7 +34,10 @@ class _AbstractModel(BaseModel):
     @classmethod
     def serialize_partially(cls, data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
-        return {key: orjson.dumps(value, default=_AbstractModel._default_json_dump) for key, value in data.items()}
+        return {
+            key: orjson.dumps(value, default=_AbstractModel._default_json_dump)
+            for key, value in data.items()
+        }
 
     @classmethod
     def deserialize_partially(cls, data: Optional[Dict[bytes, Any]]) -> Dict[str, Any]:
