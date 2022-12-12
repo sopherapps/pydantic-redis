@@ -183,8 +183,11 @@ class Model(_AbstractModel):
         For example:
         [{"___books": ["id1", "id2"]}] becomes [{"books": [Book{"id": "id1", ...}, Book{"id": "id2", ...}]}]
         """
-        field = prefixed_field.lstrip(IN_LIST_NESTED_MODEL_PREFIX)
+        field = strip_leading(prefixed_field, IN_LIST_NESTED_MODEL_PREFIX)
         model_type = field_types.get(field).__args__[0]
+        # in case the field is Optional e.g. books: Optional[List[Model]]
+        if not issubclass(model_type, Model):
+            model_type = model_type.__args__[0]
 
         for record in data:
             ids = record.pop(prefixed_field, None)
@@ -330,3 +333,13 @@ class Model(_AbstractModel):
                 fields.append(col)
 
         return fields
+
+
+def strip_leading(word: str, substring: str) -> str:
+    """
+    Strips the leading substring if it exists.
+    This is contrary to rstrip which can looks at removes each character in the substring
+    """
+    if word.startswith(substring):
+        return word[len(substring) :]
+    return word

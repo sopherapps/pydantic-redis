@@ -135,13 +135,29 @@ def test_insert_single_nested(store):
 
 @pytest.mark.parametrize("store", redis_store_fixture)
 def test_update_nested_list_of_models(store):
-    Library.insert(libraries)
+    data = [Library(name="Babel Library", address="In a book", books=books)]
+    Library.insert(data)
+    # the list of nested models is automatically inserted
     got = sorted(Book.select(), key=lambda x: x.title)
     expected = sorted(books, key=lambda x: x.title)
     assert expected == got
 
     got = sorted(Library.select(), key=lambda x: x.name)
-    expected = sorted(libraries, key=lambda x: x.name)
+    expected = sorted(data, key=lambda x: x.name)
+    assert got == expected
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_optional_nested_list_of_models(store):
+    data = [Library(name="Babel Library", address="In a book", lost=books)]
+    Library.insert(data)
+    # the list of nested models is automatically inserted
+    got = sorted(Book.select(), key=lambda x: x.title)
+    expected = sorted(books, key=lambda x: x.title)
+    assert expected == got
+
+    got = sorted(Library.select(), key=lambda x: x.name)
+    expected = sorted(data, key=lambda x: x.name)
     assert got == expected
 
 

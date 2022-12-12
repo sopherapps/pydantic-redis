@@ -1,6 +1,6 @@
 import socket
 from datetime import date
-from typing import Set, Tuple, List
+from typing import Tuple, List, Optional
 
 import pytest
 import redislite
@@ -30,7 +30,8 @@ class Library(Model):
     _primary_key_field: str = "name"
     name: str
     address: str
-    books: List[Book]
+    books: List[Book] = None
+    lost: Optional[List[Book]] = None
 
 
 authors = {
