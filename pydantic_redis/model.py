@@ -207,7 +207,7 @@ class Model(_AbstractModel):
         For example:
         [{"__book": "id1"}] becomes [{"book": Book{"id": "id1", ...}}]
         """
-        field = prefixed_field.lstrip(NESTED_MODEL_PREFIX)
+        field = strip_leading(prefixed_field, NESTED_MODEL_PREFIX)
         model_type = field_types.get(field)
 
         ids: List[str] = [record.pop(prefixed_field, None) for record in data]
