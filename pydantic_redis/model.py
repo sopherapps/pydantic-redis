@@ -184,9 +184,12 @@ class Model(_AbstractModel):
         [{"___books": ["id1", "id2"]}] becomes [{"books": [Book{"id": "id1", ...}, Book{"id": "id2", ...}]}]
         """
         field = strip_leading(prefixed_field, IN_LIST_NESTED_MODEL_PREFIX)
-        model_type = field_types.get(field).__args__[0]
-        # in case the field is Optional e.g. books: Optional[List[Model]]
-        if not issubclass(model_type, Model):
+        field_type = field_types.get(field)
+        model_type = field_type.__args__[0]
+
+        # in case the field is Optional e.g. books: Optional[List[Model]], an alias for Union[List[Model], None]
+        is_optional = field_type.__origin__ == Union
+        if is_optional:
             model_type = model_type.__args__[0]
 
         for record in data:
