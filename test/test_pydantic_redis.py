@@ -162,6 +162,41 @@ def test_update_optional_nested_list_of_models(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_nested_tuple_of_models(store):
+    jane = authors["jane"]
+    new_stuff = (books[0], jane, books[1], 8)
+    data = [Library(name="Babel Library", address="In a book", new=new_stuff)]
+    Library.insert(data)
+    # the tuple of nested models is automatically inserted
+    got = sorted(Book.select(), key=lambda x: x.title)
+    expected = sorted([books[0], books[1]], key=lambda x: x.title)
+    assert expected == got
+
+    got = sorted(Author.select(), key=lambda x: x.name)
+    expected = sorted([books[0].author, jane], key=lambda x: x.name)
+    assert expected == got
+
+    got = sorted(Library.select(), key=lambda x: x.name)
+    expected = sorted(data, key=lambda x: x.name)
+    assert got == expected
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_optional_nested_tuple_of_models(store):
+    popular_books = (books[0], books[2])
+    data = [Library(name="Babel Library", address="In a book", popular=popular_books)]
+    Library.insert(data)
+    # the tuple of nested models is automatically inserted
+    got = sorted(Book.select(), key=lambda x: x.title)
+    expected = sorted(popular_books, key=lambda x: x.title)
+    assert expected == got
+
+    got = sorted(Library.select(), key=lambda x: x.name)
+    expected = sorted(data, key=lambda x: x.name)
+    assert got == expected
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
 def test_select_default(store):
     """Selecting without arguments returns all the book models"""
     Book.insert(books)

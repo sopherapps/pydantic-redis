@@ -32,6 +32,8 @@ class Library(Model):
     address: str
     books: List[Book] = None
     lost: Optional[List[Book]] = None
+    popular: Optional[Tuple[Book, Book]] = None
+    new: Tuple[Book, Author, Book, int] = None
 
 
 authors = {
