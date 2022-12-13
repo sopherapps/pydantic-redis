@@ -142,3 +142,5 @@ cython_debug/
 .benchmarks/
 
 .python-version
+
+env3.7/
