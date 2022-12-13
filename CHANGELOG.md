@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [0.1.6] - 2022-12-12
+## [0.1.8] - 2022-12-13
+
+### Added
+
+- Add support for model fields that are tuples of nested models 
+
+### Changed
+
+### Fixed
+
+## [0.1.7] - 2022-12-12
 
 ### Added
 

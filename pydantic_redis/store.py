@@ -45,6 +45,7 @@ class Store(_AbstractStore):
             )
 
         model_class._store = self
+        model_class.initialize()
         self.models[model_class.__name__.lower()] = model_class
 
     def model(self, name: str) -> Model:
