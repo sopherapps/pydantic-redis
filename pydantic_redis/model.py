@@ -342,7 +342,7 @@ class Model(_AbstractModel):
         if life_span is not None:
             pipeline.expire(table_index_key, time=life_span)
 
-        return key
+        return name
 
     @classmethod
     def __get_serializable_dict(
