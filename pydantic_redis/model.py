@@ -26,8 +26,22 @@ class Model(_AbstractModel):
         """
         Returns the primary key value concatenated to the table name for uniqueness
         """
+        return f"{cls.__get_table_prefix()}{primary_key_value}"
+
+    @classmethod
+    def __get_table_prefix(cls):
+        """
+        Returns the prefix of the all the redis keys that are associated with this table
+        """
         table_name = cls.__name__.lower()
-        return f"{table_name}_%&_{primary_key_value}"
+        return f"{table_name}_%&_"
+
+    @classmethod
+    def __get_table_keys_regex(cls):
+        """
+        Returns the table name regex to get all keys that belong to this table
+        """
+        return f"{cls.__get_table_prefix()}*"
 
     @classmethod
     def get_table_index_key(cls):
@@ -160,26 +174,35 @@ class Model(_AbstractModel):
         """
         Selects given rows or sets of rows in the table
         """
-        columns = cls.__get_select_fields(columns)
-        if ids is None:
-            # get all keys in the table immediately so don't use a pipeline
-            table_index_key = cls.get_table_index_key()
-            keys = cls._store.redis_store.sscan_iter(name=table_index_key)
-        else:
-            keys = (
-                cls.__get_primary_key(primary_key_value=primary_key)
-                for primary_key in ids
+        if columns is None and ids is None:
+            # all fields, all ids
+            table_keys_regex = cls.__get_table_keys_regex()
+            args = [table_keys_regex, *cls._nested_model_fields.keys()]
+            response = cls._store.select_all_fields_for_all_ids_script(args=args)
+        elif columns is None and isinstance(ids, list):
+            # all fields, some ids
+            table_prefix = cls.__get_table_prefix()
+            keys = [f"{table_prefix}{key}" for key in ids]
+            response = cls._store.select_all_fields_for_some_ids_script(
+                keys=keys, args=cls._nested_model_fields.keys()
             )
-
-        with cls._store.redis_store.pipeline() as pipeline:
-            if columns is None:
-                for key in keys:
-                    pipeline.hgetall(name=key)
-            else:
-                for key in keys:
-                    pipeline.hmget(name=key, keys=columns)
-
-            response = pipeline.execute()
+        elif isinstance(columns, list) and ids is None:
+            # some fields, all ids
+            table_keys_regex = cls.__get_table_keys_regex()
+            args = [table_keys_regex, *columns, *cls._nested_model_fields.keys()]
+            response = cls._store.select_some_fields_for_all_ids_script(args=args)
+        elif isinstance(columns, list) and isinstance(ids, list):
+            # some fields, some ids
+            table_prefix = cls.__get_table_prefix()
+            keys = [f"{table_prefix}{key}" for key in ids]
+            args = [*columns, *cls._nested_model_fields.keys()]
+            response = cls._store.select_some_fields_for_all_ids_script(
+                keys=keys, args=args
+            )
+        else:
+            raise ValueError(
+                f"columns {columns}, ids: {ids} should be either None or lists"
+            )
 
         if len(response) == 0:
             return None
@@ -205,90 +228,68 @@ class Model(_AbstractModel):
             keys = [*parsed_data[0].keys()]
 
             for k in keys:
-                if k.startswith(NESTED_MODEL_LIST_FIELD_PREFIX):
-                    cls.__eager_load_nested_model_lists(
-                        prefixed_field=k, data=parsed_data
-                    )
+                if k in cls._nested_model_list_fields:
+                    cls.__parse_nested_model_lists(field=k, data=parsed_data)
 
-                elif k.startswith(NESTED_MODEL_TUPLE_FIELD_PREFIX):
-                    cls.__eager_load_nested_model_tuples(
-                        prefixed_field=k, data=parsed_data
-                    )
+                elif k in cls._nested_model_tuple_fields:
+                    cls.__parse_nested_model_tuples(field=k, data=parsed_data)
 
-                elif k.startswith(NESTED_MODEL_PREFIX):
-                    cls.__eager_load_nested_models(
-                        prefixed_field=k, data=parsed_data, field_types=cls._field_types
-                    )
+                elif k in cls._nested_model_fields:
+                    cls.__parse_nested_models(field=k, data=parsed_data)
         return parsed_data
 
     @classmethod
-    def __eager_load_nested_model_lists(
+    def __parse_nested_model_lists(
         cls,
-        prefixed_field: str,
+        field: str,
         data: List[Dict[str, Any]],
     ):
         """
-        Eagerly loads any properties that have `List[Model]` or Optional[List[Model]]` as their type annotations
-        for each item in the data such that primary_key lists are replaced by Model lists
-        Note: This mutates the data in-place as a way of optimization
-        For example:
-        [{"___books": ["id1", "id2"]}] becomes [{"books": [Book{"id": "id1", ...}, Book{"id": "id2", ...}]}]
+        Parses lists of dicts that includes fields of lists of nested dicts that represent models,
+        turning those nested dicts into models
+        NOTE: This parses the data in place for performance reasons.
         """
-        field = strip_leading(prefixed_field, NESTED_MODEL_LIST_FIELD_PREFIX)
         field_type = cls._nested_model_list_fields.get(field)
 
         for record in data:
-            ids = record.pop(prefixed_field, None)
-            record[field] = field_type.select(ids=ids)
+            nested_values = record[field]
+            if nested_values is not None:
+                record[field] = [field_type(**item) for item in nested_values]
 
     @classmethod
-    def __eager_load_nested_model_tuples(
+    def __parse_nested_model_tuples(
         cls,
-        prefixed_field: str,
+        field: str,
         data: List[Dict[str, Any]],
     ):
         """
-        Eagerly loads any properties that have `Tuple[Model]` or `Optional[Tuple[Model]]` as their type annotations
-        for each item in the data such that primary_key lists are replaced by Model tuples
-        Note: This mutates the data in-place as a way of optimization
-        For example:
-        [{"__%&t_books": ["id1", "id2"]}] becomes ({"books": [Book{"id": "id1", ...}, Book{"id": "id2", ...}]})
+        Parses lists of dicts that includes fields of tuples of nested dicts that represent models,
+        turning those nested dicts into models
+        NOTE: This parses the data in place for performance reasons.
         """
-        field = strip_leading(prefixed_field, NESTED_MODEL_TUPLE_FIELD_PREFIX)
         field_types = cls._nested_model_tuple_fields.get(field, ())
 
         for record in data:
-            values = record.pop(prefixed_field, [])
-            record[field] = tuple(
-                field_type.select(ids=[value])[0]
-                if issubclass(field_type, Model)
-                else value
-                for field_type, value in zip(field_types, values)
-            )
+            nested_values = record[field]
+            if nested_values is not None:
+                record[field] = tuple(
+                    field_type(**value)
+                    if issubclass(field_type, Model) and value is not None
+                    else value
+                    for field_type, value in zip(field_types, nested_values)
+                )
 
     @classmethod
-    def __eager_load_nested_models(
-        cls,
-        prefixed_field: str,
-        data: List[Dict[str, Any]],
-        field_types: Dict[str, Any],
-    ):
+    def __parse_nested_models(cls, field: str, data: List[Dict[str, Any]]):
         """
-        Eagerly loads any properties that have `Model` as their type annotations
-        for each item in the data such that primary_key lists are replaced by Models
-        Note: This mutates the data in-place as a way of optimization
-        For example:
-        [{"__book": "id1"}] becomes [{"book": Book{"id": "id1", ...}}]
+        Parses dicts representing nested models into model instances.
+        NOTE: This parses the data in place for performance reasons.
         """
-        field = strip_leading(prefixed_field, NESTED_MODEL_PREFIX)
         model_type = cls._nested_model_fields.get(field)
-
-        ids: List[str] = [record.pop(prefixed_field, None) for record in data]
-        # a bulk network request might be faster than eagerly loading for each record for many records
-        nested_models = model_type.select(ids=ids)
-
-        for record, model in zip(data, nested_models):
-            record[field] = model
+        for record in data:
+            nested_value = record[field]
+            if nested_value is not None:
+                record[field] = model_type(**nested_value)
 
     @classmethod
     def __parse_hmget_response(
@@ -369,47 +370,20 @@ class Model(_AbstractModel):
             key, value = k, v
 
             if key in cls._nested_model_list_fields:
-                key, value = cls.__serialize_nested_model_list_field(
-                    key=key, value=value, pipeline=pipeline, life_span=life_span
+                value = cls.__serialize_nested_model_list_field(
+                    value=value, pipeline=pipeline, life_span=life_span
                 )
             elif key in cls._nested_model_tuple_fields:
-                key, value = cls.__serialize_nested_model_tuple_field(
+                value = cls.__serialize_nested_model_tuple_field(
                     key=key, value=value, pipeline=pipeline, life_span=life_span
                 )
             elif key in cls._nested_model_fields:
-                key, value = cls.__serialize_nested_model_field(
-                    key=key, value=value, pipeline=pipeline, life_span=life_span
+                value = cls.__serialize_nested_model_field(
+                    value=value, pipeline=pipeline, life_span=life_span
                 )
 
             new_data[key] = value
         return new_data
-
-    @classmethod
-    def __get_select_fields(cls, columns: Optional[List[str]]) -> Optional[List[str]]:
-        """
-        Gets the fields to be used for selecting HMAP fields in Redis
-        It replaces any fields in `columns` that correspond to nested records with their
-        `__` suffixed versions
-        """
-        if columns is None:
-            return None
-
-        field_types = cls._field_types
-
-        fields = []
-        for col in columns:
-            field_type = field_types.get(col, None)
-
-            if isinstance(field_type, type(Model)):
-                fields.append(f"{NESTED_MODEL_PREFIX}{col}")
-            elif issubclass(field_type, List) and isinstance(
-                typing_get_args(field_type)[0], type(Model)
-            ):
-                fields.append(f"{NESTED_MODEL_LIST_FIELD_PREFIX}{col}")
-            else:
-                fields.append(col)
-
-        return fields
 
     @classmethod
     def __serialize_nested_model_tuple_field(
@@ -430,17 +404,15 @@ class Model(_AbstractModel):
                 else item
                 for field_type, item in zip(field_types, value)
             ]
-            key = f"{NESTED_MODEL_TUPLE_FIELD_PREFIX}{key}"
         except TypeError:
             # In case the value is None, just ignore
             pass
 
-        return key, value
+        return value
 
     @classmethod
     def __serialize_nested_model_list_field(
         cls,
-        key: str,
         value: List["Model"],
         pipeline: Pipeline,
         life_span: Optional[Union[float, int]],
@@ -453,17 +425,15 @@ class Model(_AbstractModel):
                 )
                 for item in value
             ]
-            key = f"{NESTED_MODEL_LIST_FIELD_PREFIX}{key}"
         except TypeError:
             # In case the value is None, just ignore
             pass
 
-        return key, value
+        return value
 
     @classmethod
     def __serialize_nested_model_field(
         cls,
-        key: str,
         value: "Model",
         pipeline: Pipeline,
         life_span: Optional[Union[float, int]],
@@ -473,12 +443,11 @@ class Model(_AbstractModel):
             value = value.__class__.__insert_on_pipeline(
                 _id=None, pipeline=pipeline, record=value, life_span=life_span
             )
-            key = f"{NESTED_MODEL_PREFIX}{key}"
         except TypeError:
             # In case the value is None, just ignore
             pass
 
-        return key, value
+        return value
 
 
 def strip_leading(word: str, substring: str) -> str:

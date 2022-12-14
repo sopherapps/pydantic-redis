@@ -4,6 +4,7 @@ from typing import Optional, Union, Any, Dict, List, Callable
 import orjson
 import redis
 from pydantic import BaseModel
+from redis.commands.core import Script
 
 from pydantic_redis.config import RedisConfig
 
@@ -17,6 +18,10 @@ class _AbstractStore(BaseModel):
     redis_config: RedisConfig
     redis_store: Optional[redis.Redis] = None
     life_span_in_seconds: Optional[int] = None
+    select_all_fields_for_all_ids_script: Optional[Script] = None
+    select_all_fields_for_some_ids_script: Optional[Script] = None
+    select_some_fields_for_all_ids_script: Optional[Script] = None
+    select_some_fields_for_some_ids_script: Optional[Script] = None
 
     class Config:
         arbitrary_types_allowed = True
