@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2022-12-15
+
+### Added
+
+### Changed
+
+- Changed the `NESTED_MODEL_LIST_FIELD_PREFIX` to "___" and `NESTED_MODEL_TUPLE_FIELD_PREFIX` to "____"
+- Changed all queries (selects) to use lua scripts
+- Changed `Model.deserialize_partially` to receive data either as a dict or as a flattened list of key-values
+
+### Fixed
+
 ## [0.1.8] - 2022-12-13
 
 ### Added
