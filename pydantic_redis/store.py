@@ -7,135 +7,260 @@ from pydantic_redis.abstract import _AbstractStore
 from pydantic_redis.config import RedisConfig
 from pydantic_redis.model import Model
 
-SELECT_SOME_FIELDS_FOR_ALL_IDS_SCRIPT = """
+SELECT_ALL_FIELDS_FOR_ALL_IDS_SCRIPT = """
+local s_find = string.find
+local s_gmatch = string.gmatch
+local ipairs = ipairs
+local table_insert = table.insert
+local next = next
+local redis_call = redis.call
+
 local filtered = {}
 local cursor = '0'
+
+local function startswith(s, prefix)
+    return s_find(s, prefix, 1, true) == 1
+end
+
+local function trim_dunder(s)
+    return s:match '^_*(.-)$'
+end
+
+local function get_obj(id)
+    local value = redis_call('HGETALL', id)
+
+    for i, k in ipairs(value) do
+        if not (i % 2 == 0) then
+            if startswith(k, '___') or startswith(k, '____') then
+                local nested = {}
+
+                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                    table_insert(nested, get_obj(v))
+                end
+
+                value[i + 1] = nested
+                value[i] = trim_dunder(k)
+            elseif startswith(k, '__') then
+                value[i + 1] = get_obj(value[i + 1])
+                value[i] = trim_dunder(k)
+            end
+        end
+    end
+
+    if next(value) == nil then
+        return id
+    end
+
+    return value
+end
+
+repeat
+    local result = redis_call('SCAN', cursor, 'MATCH', ARGV[1])
+    for _, key in ipairs(result[2]) do
+        if redis_call('TYPE', key).ok == 'hash' then
+            table_insert(filtered, get_obj(key))
+        end
+    end
+    cursor = result[1]
+until (cursor == '0')
+return filtered
+"""
+
+SELECT_ALL_FIELDS_FOR_SOME_IDS_SCRIPT = """
+local s_find = string.find
+local s_gmatch = string.gmatch
+local ipairs = ipairs
+local table_insert = table.insert
+local next = next
+local redis_call = redis.call
+
+local result = {}
+
+local function startswith(s, prefix)
+    return s_find(s, prefix, 1, true) == 1
+end
+
+local function trim_dunder(s)
+    return s:match '^_*(.-)$'
+end
+
+local function get_obj(id)
+    local value = redis_call('HGETALL', id)
+
+    for i, k in ipairs(value) do
+        if not (i % 2 == 0) then
+            if startswith(k, '___') or startswith(k, '____') then
+                local nested = {}
+
+                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                    table_insert(nested, get_obj(v))
+                end
+
+                value[i + 1] = nested
+                value[i] = trim_dunder(k)
+            elseif startswith(k, '__') then
+                value[i + 1] = get_obj(value[i + 1])
+                value[i] = trim_dunder(k)
+            end
+        end
+    end
+
+    if next(value) == nil then
+        return id
+    end
+
+    return value
+end
+
+for _, key in ipairs(KEYS) do
+    local value = get_obj(key)
+    if type(value) == 'table' then
+        table_insert(result, value)
+    end
+end
+
+return result
+"""
+
+SELECT_SOME_FIELDS_FOR_ALL_IDS_SCRIPT = """
+local s_find = string.find
+local s_gmatch = string.gmatch
+local ipairs = ipairs
+local table_insert = table.insert
+local next = next
+local redis_call = redis.call
 local table_unpack = table.unpack or unpack
-local columns = {  }
-local nested_columns = {}
-local args_tracker = {}
+
+local filtered = {}
+local cursor = '0'
+local columns = {}
+
+local function startswith(s, prefix)
+    return s_find(s, prefix, 1, true) == 1
+end
+
+local function trim_dunder(s)
+    return s:match '^_*(.-)$'
+end
+
+local function get_obj(id)
+    local value = redis_call('HGETALL', id)
+
+    for i, k in ipairs(value) do
+        if not (i % 2 == 0) then
+            if startswith(k, '___') or startswith(k, '____') then
+                local nested = {}
+
+                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                    table_insert(nested, get_obj(v))
+                end
+
+                value[i + 1] = nested
+                value[i] = trim_dunder(k)
+            elseif startswith(k, '__') then
+                value[i + 1] = get_obj(value[i + 1])
+                value[i] = trim_dunder(k)
+            end
+        end
+    end
+
+    if next(value) == nil then
+        return id
+    end
+
+    return value
+end
 
 for i, k in ipairs(ARGV) do
     if i > 1 then
-        if args_tracker[k] then
-            nested_columns[k] = true
-        else
-            table.insert(columns, k)
-            args_tracker[k] = true
-        end
+        table_insert(columns, k)
     end
 end
 
 repeat
-    local result = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
+    local result = redis_call('SCAN', cursor, 'MATCH', ARGV[1])
     for _, key in ipairs(result[2]) do
-        if redis.call('TYPE', key).ok == 'hash' then
-            local data = redis.call('HMGET', key, table_unpack(columns))
+        if redis_call('TYPE', key).ok == 'hash' then
+            local data = redis_call('HMGET', key, table_unpack(columns))
             local parsed_data = {}
 
             for i, v in ipairs(data) do
-                table.insert(parsed_data, columns[i])
-
-                if nested_columns[columns[i]] then
-                    v = redis.call('HGETALL', v)
-                end
-
-                table.insert(parsed_data, v)
+                table_insert(parsed_data, trim_dunder(columns[i]))
+                table_insert(parsed_data, get_obj(v))
             end
 
-            table.insert(filtered, parsed_data)
+            table_insert(filtered, parsed_data)
         end
     end
     cursor = result[1]
 until (cursor == '0')
 return filtered
 """
-SELECT_ALL_FIELDS_FOR_ALL_IDS_SCRIPT = """
-local filtered = {}
-local cursor = '0'
-local nested_fields = {}
 
-for i, key in ipairs(ARGV) do
-    if i > 1 then
-        nested_fields[key] = true
-    end
-end
-
-repeat
-    local result = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
-    for _, key in ipairs(result[2]) do
-        if redis.call('TYPE', key).ok == 'hash' then
-            local parent = redis.call('HGETALL', key)
-
-            for i, k in ipairs(parent) do
-                if nested_fields[k] then
-                    local nested = redis.call('HGETALL', parent[i + 1])
-                    parent[i + 1] = nested
-                end
-            end
-
-            table.insert(filtered, parent)
-        end
-    end
-    cursor = result[1]
-until (cursor == '0')
-return filtered
-"""
-SELECT_ALL_FIELDS_FOR_SOME_IDS_SCRIPT = """
-local result = {}
-local nested_fields = {}
-
-for _, key in ipairs(ARGV) do
-    nested_fields[key] = true
-end
-
-for _, key in ipairs(KEYS) do
-    local parent = redis.call('HGETALL', key)
-
-    for i, k in ipairs(parent) do
-        if nested_fields[k] then
-            local nested = redis.call('HGETALL', parent[i + 1])
-            parent[i + 1] = nested
-        end
-    end
-
-    table.insert(result, parent)
-end
-return result
-"""
 SELECT_SOME_FIELDS_FOR_SOME_IDS_SCRIPT = """
-local result = {}
+local s_find = string.find
+local s_gmatch = string.gmatch
+local ipairs = ipairs
+local table_insert = table.insert
+local next = next
+local redis_call = redis.call
 local table_unpack = table.unpack or unpack
-local columns = {  }
-local nested_columns = {}
-local args_tracker = {}
 
-for i, k in ipairs(ARGV) do
-    if args_tracker[k] then
-        nested_columns[k] = true
-    else
-        table.insert(columns, k)
-        args_tracker[k] = true
+local result = {}
+local columns = {}
+
+local function startswith(s, prefix)
+    return s_find(s, prefix, 1, true) == 1
+end
+
+local function trim_dunder(s)
+    return s:match '^_*(.-)$'
+end
+
+local function get_obj(id)
+    local value = redis_call('HGETALL', id)
+
+    for i, k in ipairs(value) do
+        if not (i % 2 == 0) then
+            if startswith(k, '___') or startswith(k, '____') then
+                local nested = {}
+
+                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                    table_insert(nested, get_obj(v))
+                end
+
+                value[i + 1] = nested
+                value[i] = trim_dunder(k)
+            elseif startswith(k, '__') then
+                value[i + 1] = get_obj(value[i + 1])
+                value[i] = trim_dunder(k)
+            end
+        end
     end
+
+    if next(value) == nil then
+        return id
+    end
+
+    return value
+end
+
+for _, k in ipairs(ARGV) do
+    table_insert(columns, k)
 end
 
 for _, key in ipairs(KEYS) do
-    local data = redis.call('HMGET', key, table_unpack(columns))
+    local data = redis_call('HMGET', key, table_unpack(columns))
     local parsed_data = {}
 
     for i, v in ipairs(data) do
         if v then
-            table.insert(parsed_data, columns[i])
-
-            if nested_columns[columns[i]] then
-                v = redis.call('HGETALL', v)
-            end
-
-            table.insert(parsed_data, v)
+            table_insert(parsed_data, trim_dunder(columns[i]))
+            table_insert(parsed_data, get_obj(v))
         end
     end
 
-    table.insert(result, parsed_data)
+    table_insert(result, parsed_data)
 end
 return result
 """
