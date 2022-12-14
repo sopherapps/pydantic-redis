@@ -144,3 +144,4 @@ cython_debug/
 .python-version
 
 env3.7/
+/lua_scripts/
