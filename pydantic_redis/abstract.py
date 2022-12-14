@@ -40,7 +40,9 @@ class _AbstractModel(BaseModel):
     def serialize_partially(cls, data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
         return {
-            key: orjson.dumps(value, default=_AbstractModel._default_json_dump)
+            key: value
+            if isinstance(value, str)
+            else orjson.dumps(value, default=_default_json_dump)
             for key, value in data.items()
         }
 
@@ -48,7 +50,11 @@ class _AbstractModel(BaseModel):
     def deserialize_partially(cls, data: Optional[Dict[bytes, Any]]) -> Dict[str, Any]:
         """Converts non primitive data types into str"""
         return {
-            str(key, "utf-8") if isinstance(key, bytes) else key: orjson.loads(value)
+            str(key, "utf-8")
+            if isinstance(key, bytes)
+            else key: value
+            if isinstance(value, str)
+            else orjson.loads(value)
             for key, value in data.items()
         }
 
@@ -76,13 +82,14 @@ class _AbstractModel(BaseModel):
         """Should later allow AND, OR"""
         raise NotImplementedError("select should be implemented")
 
-    @staticmethod
-    def _default_json_dump(obj):
-        if hasattr(obj, "json") and isinstance(obj.json, Callable):
-            return obj.json()
-        elif isinstance(obj, set):
-            # Set does not exist in JSON. It's fine to use list instead, it becomes a Set when deserializing.
-            return list(obj)
-
     class Config:
         arbitrary_types_allowed = True
+
+
+def _default_json_dump(obj):
+    """Default JSON dump for orjson"""
+    if hasattr(obj, "json") and isinstance(obj.json, Callable):
+        return obj.json()
+    elif isinstance(obj, set):
+        # Set does not exist in JSON. It's fine to use list instead, it becomes a Set when deserializing.
+        return list(obj)
