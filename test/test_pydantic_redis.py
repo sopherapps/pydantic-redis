@@ -1,11 +1,11 @@
 """Tests for the redis orm"""
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import pytest
 
 from pydantic_redis.config import RedisConfig
-from pydantic_redis.model import Model
+from pydantic_redis.model import Model, strip_leading, NESTED_MODEL_PREFIX
 from test.conftest import (
     redis_store_fixture,
     Book,
@@ -353,8 +353,12 @@ def test_delete_multiple(store):
         assert expected == authors_in_redis_as_models
 
 
-def __deserialize_book_data(raw_book_data: Dict[bytes, Any]) -> Book:
+def __deserialize_book_data(raw_book_data: Dict[str, Any]) -> Book:
     """Deserializes the raw book data returning a book instance"""
+    author_id = raw_book_data.pop(f"{NESTED_MODEL_PREFIX}author")
+    author_id = strip_leading(author_id, "author_%&_")
+
     data = Book.deserialize_partially(raw_book_data)
-    data["author"] = Author.select(ids=[data["__author"]])[0]
+
+    data["author"] = Author.select(ids=[author_id])[0]
     return Book(**data)

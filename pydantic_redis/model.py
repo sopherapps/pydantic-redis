@@ -1,25 +1,20 @@
 """Module containing the model classes"""
 import typing
-from typing import Optional, List, Any, Union, Dict, Tuple
+from typing import Optional, List, Any, Union, Dict, Tuple, Type
 
 from redis.client import Pipeline
 
 from pydantic_redis.abstract import _AbstractModel
 
 NESTED_MODEL_PREFIX = "__"
-NESTED_MODEL_LIST_FIELD_PREFIX = "__%&l_"
-NESTED_MODEL_TUPLE_FIELD_PREFIX = "__%&t_"
+NESTED_MODEL_LIST_FIELD_PREFIX = "___"
+NESTED_MODEL_TUPLE_FIELD_PREFIX = "____"
 
 
 class Model(_AbstractModel):
     """
     The section in the store that saves rows of the same kind
     """
-
-    _nested_model_tuple_fields = {}
-    _nested_model_list_fields = {}
-    _nested_model_fields = {}
-    _field_types = {}
 
     @classmethod
     def __get_primary_key(cls, primary_key_value: Any):
@@ -177,27 +172,26 @@ class Model(_AbstractModel):
         if columns is None and ids is None:
             # all fields, all ids
             table_keys_regex = cls.__get_table_keys_regex()
-            args = [table_keys_regex, *cls._nested_model_fields.keys()]
+            args = [table_keys_regex]
             response = cls._store.select_all_fields_for_all_ids_script(args=args)
         elif columns is None and isinstance(ids, list):
             # all fields, some ids
             table_prefix = cls.__get_table_prefix()
             keys = [f"{table_prefix}{key}" for key in ids]
-            response = cls._store.select_all_fields_for_some_ids_script(
-                keys=keys, args=cls._nested_model_fields.keys()
-            )
+            response = cls._store.select_all_fields_for_some_ids_script(keys=keys)
         elif isinstance(columns, list) and ids is None:
             # some fields, all ids
             table_keys_regex = cls.__get_table_keys_regex()
-            args = [table_keys_regex, *columns, *cls._nested_model_fields.keys()]
+            columns = cls.__get_select_fields(columns)
+            args = [table_keys_regex, *columns]
             response = cls._store.select_some_fields_for_all_ids_script(args=args)
         elif isinstance(columns, list) and isinstance(ids, list):
             # some fields, some ids
             table_prefix = cls.__get_table_prefix()
             keys = [f"{table_prefix}{key}" for key in ids]
-            args = [*columns, *cls._nested_model_fields.keys()]
+            columns = cls.__get_select_fields(columns)
             response = cls._store.select_some_fields_for_all_ids_script(
-                keys=keys, args=args
+                keys=keys, args=columns
             )
         else:
             raise ValueError(
@@ -207,111 +201,57 @@ class Model(_AbstractModel):
         if len(response) == 0:
             return None
         elif isinstance(response, list) and columns is None:
-            return cls.__parse_model_list(response)
+            return cls.__parse_list_of_lists_to_models(response)
         elif isinstance(response, list) and columns is not None:
-            return cls.__parse_hmget_response(response, columns=columns)
-        elif isinstance(response, dict):
-            return cls.__parse_model_list([response])[0]
+            return cls.__parse_list_of_lists_to_dicts(response)
 
         return response
 
     @classmethod
-    def __parse_dict_list(cls, data: List[Dict[bytes, Any]]) -> List[Dict[str, Any]]:
+    def __get_select_fields(cls, columns: List[str]) -> List[str]:
         """
-        Converts a list of dictionaries straight from Redis into a list of normalized dictionaries
-        with foreign keys replaced by model instances
+        Gets the fields to be used for selecting HMAP fields in Redis
+        It replaces any fields in `columns` that correspond to nested records with their
+        `__` suffixed versions
         """
-        parsed_data = [
-            cls.deserialize_partially(record) for record in data if record != {}
+        fields = []
+        for col in columns:
+
+            if col in cls._nested_model_fields:
+                col = f"{NESTED_MODEL_PREFIX}{col}"
+            elif col in cls._nested_model_list_fields:
+                col = f"{NESTED_MODEL_LIST_FIELD_PREFIX}{col}"
+            elif col in cls._nested_model_tuple_fields:
+                col = f"{NESTED_MODEL_TUPLE_FIELD_PREFIX}{col}"
+
+            fields.append(col)
+        return fields
+
+    @classmethod
+    def __parse_list_of_lists_to_models(cls, data: List[List[Any]]) -> List["Model"]:
+        """
+        Converts a list of lists of key-values into a list of models
+        with foreign keys replaced by model instances. The list is got from calling EVAL on Redis .
+
+        EVAL returns a List of Lists of key, values where the value for a given key is in the position
+        just after the key e.g. [["foo", "bar", "head", 9]] => [{"foo": "bar", "head": 9}]
+        """
+        return [
+            cls(**cls.deserialize_partially(record)) for record in data if record != []
         ]
-        if len(parsed_data) > 0:
-            keys = [*parsed_data[0].keys()]
-
-            for k in keys:
-                if k in cls._nested_model_list_fields:
-                    cls.__parse_nested_model_lists(field=k, data=parsed_data)
-
-                elif k in cls._nested_model_tuple_fields:
-                    cls.__parse_nested_model_tuples(field=k, data=parsed_data)
-
-                elif k in cls._nested_model_fields:
-                    cls.__parse_nested_models(field=k, data=parsed_data)
-        return parsed_data
 
     @classmethod
-    def __parse_nested_model_lists(
-        cls,
-        field: str,
-        data: List[Dict[str, Any]],
-    ):
-        """
-        Parses lists of dicts that includes fields of lists of nested dicts that represent models,
-        turning those nested dicts into models
-        NOTE: This parses the data in place for performance reasons.
-        """
-        field_type = cls._nested_model_list_fields.get(field)
-
-        for record in data:
-            nested_values = record[field]
-            if nested_values is not None:
-                record[field] = [field_type(**item) for item in nested_values]
-
-    @classmethod
-    def __parse_nested_model_tuples(
-        cls,
-        field: str,
-        data: List[Dict[str, Any]],
-    ):
-        """
-        Parses lists of dicts that includes fields of tuples of nested dicts that represent models,
-        turning those nested dicts into models
-        NOTE: This parses the data in place for performance reasons.
-        """
-        field_types = cls._nested_model_tuple_fields.get(field, ())
-
-        for record in data:
-            nested_values = record[field]
-            if nested_values is not None:
-                record[field] = tuple(
-                    field_type(**value)
-                    if issubclass(field_type, Model) and value is not None
-                    else value
-                    for field_type, value in zip(field_types, nested_values)
-                )
-
-    @classmethod
-    def __parse_nested_models(cls, field: str, data: List[Dict[str, Any]]):
-        """
-        Parses dicts representing nested models into model instances.
-        NOTE: This parses the data in place for performance reasons.
-        """
-        model_type = cls._nested_model_fields.get(field)
-        for record in data:
-            nested_value = record[field]
-            if nested_value is not None:
-                record[field] = model_type(**nested_value)
-
-    @classmethod
-    def __parse_hmget_response(
-        cls, data: List[List[Any]], columns: List[str]
+    def __parse_list_of_lists_to_dicts(
+        cls, data: List[List[Any]]
     ) -> List[Dict[str, Any]]:
         """
-        Converts the response from redis.hmget (a list of lists ordered identically to ``columns``) into a list of
-        normalized dictionaries where foreign keys have been replaced by nested models
-        """
-        dict_list = [
-            {field: record[index] for index, field in enumerate(columns)}
-            for record in data
-        ]
-        return cls.__parse_dict_list(dict_list)
+        Converts a list of lists of key-values into a list of normalized dictionaries
+        with foreign keys replaced by model instances. The list is got from calling EVAL on Redis .
 
-    @classmethod
-    def __parse_model_list(cls, data: List[Dict[bytes, Any]]) -> List["Model"]:
+        EVAL returns a List of Lists of key, values where the value for a given key is in the position
+        just after the key e.g. [["foo", "bar", "head", 9]] => [{"foo": "bar", "head": 9}]
         """
-        Converts a list of dictionaries straight from Redis into a list of Model instances
-        """
-        parsed_dict_list = cls.__parse_dict_list(data)
-        return [cls(**record) for record in parsed_dict_list]
+        return [cls.deserialize_partially(record) for record in data if record != []]
 
     @classmethod
     def __insert_on_pipeline(
@@ -370,16 +310,16 @@ class Model(_AbstractModel):
             key, value = k, v
 
             if key in cls._nested_model_list_fields:
-                value = cls.__serialize_nested_model_list_field(
-                    value=value, pipeline=pipeline, life_span=life_span
+                key, value = cls.__serialize_nested_model_list_field(
+                    key=key, value=value, pipeline=pipeline, life_span=life_span
                 )
             elif key in cls._nested_model_tuple_fields:
-                value = cls.__serialize_nested_model_tuple_field(
+                key, value = cls.__serialize_nested_model_tuple_field(
                     key=key, value=value, pipeline=pipeline, life_span=life_span
                 )
             elif key in cls._nested_model_fields:
-                value = cls.__serialize_nested_model_field(
-                    value=value, pipeline=pipeline, life_span=life_span
+                key, value = cls.__serialize_nested_model_field(
+                    key=key, value=value, pipeline=pipeline, life_span=life_span
                 )
 
             new_data[key] = value
@@ -404,15 +344,17 @@ class Model(_AbstractModel):
                 else item
                 for field_type, item in zip(field_types, value)
             ]
+            key = f"{NESTED_MODEL_TUPLE_FIELD_PREFIX}{key}"
         except TypeError:
             # In case the value is None, just ignore
             pass
 
-        return value
+        return key, value
 
     @classmethod
     def __serialize_nested_model_list_field(
         cls,
+        key: str,
         value: List["Model"],
         pipeline: Pipeline,
         life_span: Optional[Union[float, int]],
@@ -425,29 +367,32 @@ class Model(_AbstractModel):
                 )
                 for item in value
             ]
+            key = f"{NESTED_MODEL_LIST_FIELD_PREFIX}{key}"
         except TypeError:
             # In case the value is None, just ignore
             pass
 
-        return value
+        return key, value
 
     @classmethod
     def __serialize_nested_model_field(
         cls,
+        key: str,
         value: "Model",
         pipeline: Pipeline,
         life_span: Optional[Union[float, int]],
-    ) -> Tuple[str, List[Any]]:
+    ) -> Tuple[str, str]:
         """Serializes a key-value pair for a field that has a nested model"""
         try:
             value = value.__class__.__insert_on_pipeline(
                 _id=None, pipeline=pipeline, record=value, life_span=life_span
             )
+            key = f"{NESTED_MODEL_PREFIX}{key}"
         except TypeError:
             # In case the value is None, just ignore
             pass
 
-        return value
+        return key, value
 
 
 def strip_leading(word: str, substring: str) -> str:
