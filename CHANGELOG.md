@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2022-12-15
+
+### Added
+
+- Added asyncio support, to be got from the `pydantic_redis.asyncio` module
+
+### Changed
+
+- Moved the synchronous version to the `pydantic_redis.syncio` module, but kept its contents exposed in pydantic_redis
+  for backward-compatibility
+
+### Fixed
+
 ## [0.2.0] - 2022-12-15
 
 ### Added

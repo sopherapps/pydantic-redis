@@ -4,15 +4,23 @@
 
 A simple declarative ORM for Redis
 
-*Note: For a faster ORM with similar features, consider [orredis](https://github.com/sopherapps/orredis) which, under the hood, is built in rust*
-
 ## Main Dependencies
 
 - [Python +3.6](https://www.python.org)
 - [redis](https://pypi.org/project/redis/)
 - [pydantic](https://github.com/samuelcolvin/pydantic/)
 
-## Getting Started
+## Most Notable Features
+
+- Define business domain objects as [pydantic](https://github.com/samuelcolvin/pydantic/) and automatically get ability
+  to save them as is in [redis](https://pypi.org/project/redis/) with an intuitive API of `insert`, `update`, `delete`,
+  `select`
+- Maintain simple relationships between domain objects by simply nesting them either as single objects or lists, or tuples.
+  Any direct or indirect update to a nested object will automatically reflect in all parent objects that have it nested in
+  them when queried again from redis.
+- Both synchronous and asynchronous APIs available.
+
+## Getting Started (Synchronous Version)
 
 - Install the package
 
@@ -20,31 +28,45 @@ A simple declarative ORM for Redis
   pip install pydantic-redis
   ```
 
-- Import the `Store`, the `RedisConfig` and the `Model` classes and use accordingly
+- Import the `Store`, the `RedisConfig` and the `Model` classes from `pydantic_redis` and use accordingly
 
 ```python
 from datetime import date
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from pydantic_redis import RedisConfig, Model, Store
 
 
-# Create models as you would create pydantic models i.e. using typings
-# the _primary_key_field is mandatory for ease of data querying and updating
 class Author(Model):
+  """
+  An Author model, just like a pydantic model with appropriate type annotations
+  NOTE: The `_primary_key_field` is mandatory
+  """
   _primary_key_field: str = 'name'
   name: str
   active_years: Tuple[int, int]
 
 
-# Create models as you would create pydantic models i.e. using typings
-# the _primary_key_field is mandatory for ease of data querying and updating
 class Book(Model):
+  """
+  A Book model.
+  
+  Models can have the following field types
+  - The usual i.e. float, int, dict, list, date, str, dict, Optional etc as long as they are serializable by orjson
+  - Nested models e.g. `author: Author` or `author: Optional[Author]`
+  - List of nested models e.g. `authors: List[Author]` or `authors: Optional[List[Author]]`
+  - Tuples including nested models e.g. `access_log: Tuple[Author, date]` or `access_log: Optional[Tuple[Author, date]]]`
+  
+  NOTE: 1. Any nested model whether plain or in a list or tuple will automatically inserted into the redis store
+       when the parent model is inserted. e.g. a Book with an author field, when inserted, will also insert
+       the author. The author can then be queried directly if that's something one wishes to do.
+       
+       2. When a parent model is inserted with a nested model instance that already exists, the older nested model 
+       instance is overwritten. This is one way of updating nested models. All parent models that contain that nested
+       model instance will see the change. 
+  """
   _primary_key_field: str = 'title'
   title: str
   author: Author
-  # You can even nest models. they will be automatically inserted into their own collection
-  # if they don't exist. Any update to these nested models will reflect in future data; thus no stale data.
-  # consider this as an actual child-parent relationship
   rating: float
   published_on: date
   tags: List[str] = []
@@ -52,21 +74,37 @@ class Book(Model):
 
 
 class Library(Model):
-  # the _primary_key_field is mandatory
+  """
+  A library model.
+  
+  It shows a number of complicated nested models.
+  
+  About Nested Model Performance
+  ---
+  To minimize the performance penalty for nesting models, we use REDIS EVALSHA to eagerly load the nested models
+  before the response is returned to the client. This ensures that only ONE network call is made every time.
+  """
   _primary_key_field: str = 'name'
   name: str
   address: str
+  books: List[Book] = None
+  lost: Optional[List[Book]] = None
+  popular: Optional[Tuple[Book, Book]] = None
+  new: Tuple[Book, Author, int] = None
 
 
-# Create the store and register your models
-store = Store(name='some_name', redis_config=RedisConfig(db=5, host='localhost', port=6379),
-              life_span_in_seconds=3600)
+# Create the store
+store = Store(
+  name='some_name', 
+  redis_config=RedisConfig(db=5, host='localhost', port=6379),
+  life_span_in_seconds=3600)
+
+# register your models. DON'T FORGET TO DO THIS.
 store.register_model(Book)
 store.register_model(Library)
 store.register_model(Author)
 
 # sample authors. You can create as many as you wish anywhere in the code
-
 authors = {
   "charles": Author(name="Charles Dickens", active_years=(1220, 1280)),
   "jane": Author(name="Jane Austen", active_years=(1580, 1640)),
@@ -74,59 +112,283 @@ authors = {
 
 # Sample books.
 books = [
-  Book(title="Oliver Twist", author=authors["charles"], published_on=date(year=1215, month=4, day=4),
-       in_stock=False, rating=2, tags=["Classic"]),
-  Book(title="Great Expectations", author=authors["charles"], published_on=date(year=1220, month=4, day=4),
-       rating=5,
-       tags=["Classic"]),
-  Book(title="Jane Eyre", author=authors["charles"], published_on=date(year=1225, month=6, day=4), in_stock=False,
-       rating=3.4, tags=["Classic", "Romance"]),
-  Book(title="Wuthering Heights", author=authors["jane"], published_on=date(year=1600, month=4, day=4),
-       rating=4.0,
-       tags=["Classic", "Romance"]),
+    Book(
+        title="Oliver Twist",
+        author=authors["charles"],
+        published_on=date(year=1215, month=4, day=4),
+        in_stock=False,
+        rating=2,
+        tags=["Classic"],
+    ),
+    Book(
+        title="Great Expectations",
+        author=authors["charles"],
+        published_on=date(year=1220, month=4, day=4),
+        rating=5,
+        tags=["Classic"],
+    ),
+    Book(
+        title="Jane Eyre",
+        author=authors["charles"],
+        published_on=date(year=1225, month=6, day=4),
+        in_stock=False,
+        rating=3.4,
+        tags=["Classic", "Romance"],
+    ),
+    Book(
+        title="Wuthering Heights",
+        author=authors["jane"],
+        published_on=date(year=1600, month=4, day=4),
+        rating=4.0,
+        tags=["Classic", "Romance"],
+    ),
 ]
 
 # Some library objects
 libraries = [
-  Library(name="The Grand Library", address="Kinogozi, Hoima, Uganda"),
-  Library(name="Christian Library", address="Buhimba, Hoima, Uganda")
+  Library(
+    name="The Grand Library", 
+    address="Kinogozi, Hoima, Uganda", 
+    lost=[books[1]],
+  ),
+  Library(
+    name="Christian Library", 
+    address="Buhimba, Hoima, Uganda", 
+    new=(books[0], authors["jane"], 30),
+  )
 ]
 
-# Insert them into redis
-Book.insert(books)  # (the associated authors will be automatically inserted)
+# Insert Many. You can given them a TTL (life_span_seconds).
+Book.insert(books, life_span_seconds=3600)
 Library.insert(libraries)
 
-# Select all books to view them. A list of Model instances will be returned
-all_books = Book.select()
-print(
-  all_books)  # Will print [Book(title="Oliver Twist", author="Charles Dickens", published_on=date(year=1215, month=4, day=4), in_stock=False), Book(...]
+# Insert One. You can also given it a TTL (life_span_seconds).
+Author.insert(Author(name="Jack Myers", active_years=(1240, 1300)))
 
-# Or select some books
-some_books = Book.select(ids=["Oliver Twist", "Jane Eyre"])
-print(some_books)  # Will print only those two books
-
-# Or select some authors
-some_authors = Author.select(ids=["Jane Austen"])
-print(
-  some_authors)  # Will print Jane Austen even though you didn't explicitly insert her in the Author's collection
-
-# Or select some columns. THIS RETURNS DICTIONARIES not MODEL Instances
-# The Dictionaries have values in string form so you might need to do some extra work
-books_with_few_fields = Book.select(columns=["author", "in_stock"])
-print(books_with_few_fields)  # Will print [{"author": "'Charles Dickens", "in_stock": "True"},...]
-
-# Update any book or library
+# Update One. You can also given it a TTL (life_span_seconds).
 Book.update(_id="Oliver Twist", data={"author": authors["jane"]})
-# You could even update a given author's details by nesting their new data in a book update
+
+# Update nested model indirectly
 updated_jane = Author(**authors["jane"].dict())
 updated_jane.active_years = (1999, 2008)
 Book.update(_id="Oliver Twist", data={"author": updated_jane})
-# Trying to retrieve jane directly will return her with the new details
-# All other books that have Jane Austen as author will also have their data updated. (like a real relationship)
-Author.select(ids=["Jane Austen"])
+
+# Query the data
+# Get all, with all fields shown. Data returned is a list of models instances.
+all_books = Book.select()
+print(all_books)
+# Prints [Book(title="Oliver Twist", author="Charles Dickens", published_on=date(year=1215, month=4, day=4), 
+# in_stock=False), Book(...]
+
+# Get some, with all fields shown. Data returned is a list of models instances.
+some_books = Book.select(ids=["Oliver Twist", "Jane Eyre"])
+print(some_books)
+
+# Get all, with only a few fields shown. Data returned is a list of dictionaries.
+books_with_few_fields = Book.select(columns=["author", "in_stock"])
+print(books_with_few_fields)
+# Prints [{"author": "'Charles Dickens", "in_stock": "True"},...]
+
+# Get some, with only some fields shown. Data returned is a list of dictionaries.
+some_books_with_few_fields = Book.select(ids=["Oliver Twist", "Jane Eyre"], columns=["author", "in_stock"])
+print(some_books_with_few_fields)
+
+# Query the nested models directly.
+some_authors = Author.select(ids=["Jane Austen"])
+print(some_authors)
 
 # Delete any number of items
 Library.delete(ids=["The Grand Library"])
+```
+
+## Getting Started (Asynchronous Version)
+
+- Install the package
+
+  ```bash
+  pip install pydantic-redis
+  ```
+
+- Import the `Store`, the `RedisConfig` and the `Model` classes from `pydantic_redis.asyncio` and use accordingly
+
+```python
+import asyncio
+from datetime import date
+from typing import Tuple, List, Optional
+from pydantic_redis.asyncio import RedisConfig, Model, Store
+
+# The features are exactly the same as the synchronous version, except for the ability
+# to return coroutines when `insert`, `update`, `select` or `delete` are called.
+
+
+class Author(Model):
+  """
+  An Author model, just like a pydantic model with appropriate type annotations
+  NOTE: The `_primary_key_field` is mandatory
+  """
+  _primary_key_field: str = 'name'
+  name: str
+  active_years: Tuple[int, int]
+
+
+class Book(Model):
+  """
+  A Book model.
+  
+  Models can have the following field types
+  - The usual i.e. float, int, dict, list, date, str, dict, Optional etc as long as they are serializable by orjson
+  - Nested models e.g. `author: Author` or `author: Optional[Author]`
+  - List of nested models e.g. `authors: List[Author]` or `authors: Optional[List[Author]]`
+  - Tuples including nested models e.g. `access_log: Tuple[Author, date]` or `access_log: Optional[Tuple[Author, date]]]`
+  
+  NOTE: 1. Any nested model whether plain or in a list or tuple will automatically inserted into the redis store
+       when the parent model is inserted. e.g. a Book with an author field, when inserted, will also insert
+       the author. The author can then be queried directly if that's something one wishes to do.
+       
+       2. When a parent model is inserted with a nested model instance that already exists, the older nested model 
+       instance is overwritten. This is one way of updating nested models. All parent models that contain that nested
+       model instance will see the change. 
+  """
+  _primary_key_field: str = 'title'
+  title: str
+  author: Author
+  rating: float
+  published_on: date
+  tags: List[str] = []
+  in_stock: bool = True
+
+
+class Library(Model):
+  """
+  A library model.
+  
+  It shows a number of complicated nested models.
+  
+  About Nested Model Performance
+  ---
+  To minimize the performance penalty for nesting models, we use REDIS EVALSHA to eagerly load the nested models
+  before the response is returned to the client. This ensures that only ONE network call is made every time.
+  """
+  _primary_key_field: str = 'name'
+  name: str
+  address: str
+  books: List[Book] = None
+  lost: Optional[List[Book]] = None
+  popular: Optional[Tuple[Book, Book]] = None
+  new: Tuple[Book, Author, int] = None
+
+
+async def run_async():
+  """The async coroutine"""
+  # Create the store
+  store = Store(
+    name='some_name', 
+    redis_config=RedisConfig(db=5, host='localhost', port=6379),
+    life_span_in_seconds=3600)
+  
+  # register your models. DON'T FORGET TO DO THIS.
+  store.register_model(Book)
+  store.register_model(Library)
+  store.register_model(Author)
+  
+  # sample authors. You can create as many as you wish anywhere in the code
+  authors = {
+    "charles": Author(name="Charles Dickens", active_years=(1220, 1280)),
+    "jane": Author(name="Jane Austen", active_years=(1580, 1640)),
+  }
+  
+  # Sample books.
+  books = [
+      Book(
+          title="Oliver Twist",
+          author=authors["charles"],
+          published_on=date(year=1215, month=4, day=4),
+          in_stock=False,
+          rating=2,
+          tags=["Classic"],
+      ),
+      Book(
+          title="Great Expectations",
+          author=authors["charles"],
+          published_on=date(year=1220, month=4, day=4),
+          rating=5,
+          tags=["Classic"],
+      ),
+      Book(
+          title="Jane Eyre",
+          author=authors["charles"],
+          published_on=date(year=1225, month=6, day=4),
+          in_stock=False,
+          rating=3.4,
+          tags=["Classic", "Romance"],
+      ),
+      Book(
+          title="Wuthering Heights",
+          author=authors["jane"],
+          published_on=date(year=1600, month=4, day=4),
+          rating=4.0,
+          tags=["Classic", "Romance"],
+      ),
+  ]
+  
+  # Some library objects
+  libraries = [
+    Library(
+      name="The Grand Library", 
+      address="Kinogozi, Hoima, Uganda", 
+      lost=[books[1]],
+    ),
+    Library(
+      name="Christian Library", 
+      address="Buhimba, Hoima, Uganda", 
+      new=(books[0], authors["jane"], 30),
+    )
+  ]
+  
+  # Insert Many. You can given them a TTL (life_span_seconds).
+  await Book.insert(books, life_span_seconds=3600)
+  await Library.insert(libraries)
+  
+  # Insert One. You can also given it a TTL (life_span_seconds).
+  await Author.insert(Author(name="Jack Myers", active_years=(1240, 1300)))
+  
+  # Update One. You can also given it a TTL (life_span_seconds).
+  await Book.update(_id="Oliver Twist", data={"author": authors["jane"]})
+  
+  # Update nested model indirectly
+  updated_jane = Author(**authors["jane"].dict())
+  updated_jane.active_years = (1999, 2008)
+  await Book.update(_id="Oliver Twist", data={"author": updated_jane})
+  
+  # Query the data
+  # Get all, with all fields shown. Data returned is a list of models instances.
+  all_books = await Book.select()
+  print(all_books)
+  # Prints [Book(title="Oliver Twist", author="Charles Dickens", published_on=date(year=1215, month=4, day=4), 
+  # in_stock=False), Book(...]
+  
+  # Get some, with all fields shown. Data returned is a list of models instances.
+  some_books = await Book.select(ids=["Oliver Twist", "Jane Eyre"])
+  print(some_books)
+  
+  # Get all, with only a few fields shown. Data returned is a list of dictionaries.
+  books_with_few_fields = await Book.select(columns=["author", "in_stock"])
+  print(books_with_few_fields)
+  # Prints [{"author": "'Charles Dickens", "in_stock": "True"},...]
+  
+  # Get some, with only some fields shown. Data returned is a list of dictionaries.
+  some_books_with_few_fields = await Book.select(ids=["Oliver Twist", "Jane Eyre"], columns=["author", "in_stock"])
+  print(some_books_with_few_fields)
+  
+  # Query the nested models directly.
+  some_authors = await Author.select(ids=["Jane Austen"])
+  print(some_authors)
+  
+  # Delete any number of items
+  await Library.delete(ids=["The Grand Library"])
+
+
+asyncio.run(run_async())
 ```
 
 ## How to test
@@ -203,6 +465,13 @@ benchmark_select_default[redis_store]                      486.6931 (3.66)     4
 benchmark_bulk_insert[redis_store]                         897.7862 (6.75)     848.7410 (7.23)     1,188.5160 (3.42)   
 -----------------------------------------------------------------------------------------------------------------------
 ```
+
+## Contributions
+
+Contributions are welcome. The docs have to maintained, the code has to be made cleaner, more idiomatic and faster,
+and there might be need for someone else to take over this repo in case I move on to other things. It happens!
+
+When you are ready, look at the [CONTRIBUTIONS GUIDELINES](./CONTRIBUTING.md)
 
 ## License
 
