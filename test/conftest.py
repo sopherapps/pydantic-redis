@@ -10,6 +10,9 @@ from pytest_lazyfixture import lazy_fixture
 from pydantic_redis import syncio as syn, asyncio as asy
 
 
+aio_pytest_fixture = getattr(pytest_asyncio, "fixture", pytest.fixture())
+
+
 class Author(syn.Model):
     _primary_key_field: str = "name"
     name: str
@@ -157,20 +160,6 @@ delete_books_fixture = [
 
 # async fixtures
 async_redis_store_fixture = [(lazy_fixture("async_redis_store"))]
-async_books_fixture = [
-    (lazy_fixture("async_redis_store"), book) for book in async_books
-]
-async_update_books_fixture = [
-    (
-        lazy_fixture("async_redis_store"),
-        book.title,
-        {"author": authors["jane"], "in_stock": not book.in_stock},
-    )
-    for book in async_books[-1:]
-]
-async_delete_books_fixture = [
-    (lazy_fixture("async_redis_store"), book.title) for book in async_books[-1:]
-]
 
 
 @pytest.fixture()
@@ -206,7 +195,7 @@ def redis_store(redis_server):
     store.redis_store.flushall()
 
 
-@pytest_asyncio.fixture
+@aio_pytest_fixture
 async def async_redis_store(redis_server):
     """Sets up a redis store using the redis_server fixture and adds the book model to it"""
     store = asy.Store(
