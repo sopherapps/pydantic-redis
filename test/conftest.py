@@ -3,19 +3,26 @@ from datetime import date
 from typing import Tuple, List, Optional
 
 import pytest
+import pytest_asyncio
 import redislite
 from pytest_lazyfixture import lazy_fixture
 
-from pydantic_redis import Store, RedisConfig, Model
+from pydantic_redis import syncio as syn, asyncio as asy
 
 
-class Author(Model):
+class Author(syn.Model):
     _primary_key_field: str = "name"
     name: str
     active_years: Tuple[int, int]
 
 
-class Book(Model):
+class AsyncAuthor(asy.Model):
+    _primary_key_field: str = "name"
+    name: str
+    active_years: Tuple[int, int]
+
+
+class Book(syn.Model):
     _primary_key_field: str = "title"
     title: str
     author: Author
@@ -25,7 +32,17 @@ class Book(Model):
     in_stock: bool = True
 
 
-class Library(Model):
+class AsyncBook(asy.Model):
+    _primary_key_field: str = "title"
+    title: str
+    author: AsyncAuthor
+    rating: float
+    published_on: date
+    tags: List[str] = []
+    in_stock: bool = True
+
+
+class Library(syn.Model):
     # the _primary_key_field is mandatory
     _primary_key_field: str = "name"
     name: str
@@ -36,9 +53,25 @@ class Library(Model):
     new: Tuple[Book, Author, Book, int] = None
 
 
+class AsyncLibrary(asy.Model):
+    # the _primary_key_field is mandatory
+    _primary_key_field: str = "name"
+    name: str
+    address: str
+    books: List[AsyncBook] = None
+    lost: Optional[List[AsyncBook]] = None
+    popular: Optional[Tuple[AsyncBook, AsyncBook]] = None
+    new: Tuple[AsyncBook, AsyncAuthor, AsyncBook, int] = None
+
+
 authors = {
     "charles": Author(name="Charles Dickens", active_years=(1220, 1280)),
     "jane": Author(name="Jane Austen", active_years=(1580, 1640)),
+}
+
+async_authors = {
+    "charles": AsyncAuthor(name="Charles Dickens", active_years=(1220, 1280)),
+    "jane": AsyncAuthor(name="Jane Austen", active_years=(1580, 1640)),
 }
 
 books = [
@@ -74,6 +107,40 @@ books = [
     ),
 ]
 
+async_books = [
+    AsyncBook(
+        title="Oliver Twist",
+        author=authors["charles"],
+        published_on=date(year=1215, month=4, day=4),
+        in_stock=False,
+        rating=2,
+        tags=["Classic"],
+    ),
+    AsyncBook(
+        title="Great Expectations",
+        author=authors["charles"],
+        published_on=date(year=1220, month=4, day=4),
+        rating=5,
+        tags=["Classic"],
+    ),
+    AsyncBook(
+        title="Jane Eyre",
+        author=authors["charles"],
+        published_on=date(year=1225, month=6, day=4),
+        in_stock=False,
+        rating=3.4,
+        tags=["Classic", "Romance"],
+    ),
+    AsyncBook(
+        title="Wuthering Heights",
+        author=authors["jane"],
+        published_on=date(year=1600, month=4, day=4),
+        rating=4.0,
+        tags=["Classic", "Romance"],
+    ),
+]
+
+# sync fixtures
 redis_store_fixture = [(lazy_fixture("redis_store"))]
 books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
 update_books_fixture = [
@@ -86,6 +153,23 @@ update_books_fixture = [
 ]
 delete_books_fixture = [
     (lazy_fixture("redis_store"), book.title) for book in books[-1:]
+]
+
+# async fixtures
+async_redis_store_fixture = [(lazy_fixture("async_redis_store"))]
+async_books_fixture = [
+    (lazy_fixture("async_redis_store"), book) for book in async_books
+]
+async_update_books_fixture = [
+    (
+        lazy_fixture("async_redis_store"),
+        book.title,
+        {"author": authors["jane"], "in_stock": not book.in_stock},
+    )
+    for book in async_books[-1:]
+]
+async_delete_books_fixture = [
+    (lazy_fixture("async_redis_store"), book.title) for book in async_books[-1:]
 ]
 
 
@@ -110,9 +194,9 @@ def redis_server(unused_tcp_port):
 @pytest.fixture()
 def redis_store(redis_server):
     """Sets up a redis store using the redis_server fixture and adds the book model to it"""
-    store = Store(
+    store = syn.Store(
         name="sample",
-        redis_config=RedisConfig(port=redis_server, db=1),
+        redis_config=syn.RedisConfig(port=redis_server, db=1),
         life_span_in_seconds=3600,
     )
     store.register_model(Book)
@@ -120,3 +204,18 @@ def redis_store(redis_server):
     store.register_model(Library)
     yield store
     store.redis_store.flushall()
+
+
+@pytest_asyncio.fixture
+async def async_redis_store(redis_server):
+    """Sets up a redis store using the redis_server fixture and adds the book model to it"""
+    store = asy.Store(
+        name="sample",
+        redis_config=syn.RedisConfig(port=redis_server, db=1),
+        life_span_in_seconds=3600,
+    )
+    store.register_model(AsyncBook)
+    store.register_model(AsyncAuthor)
+    store.register_model(AsyncLibrary)
+    yield store
+    await store.redis_store.flushall()
