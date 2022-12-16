@@ -1,5 +1,7 @@
 """Module containing the model classes"""
-from typing import Optional, List, Any, Union, Dict
+from typing import Optional, List, Any, Union, Dict, Tuple, Type
+
+import redis.asyncio
 
 from pydantic_redis.shared.model import AbstractModel
 from pydantic_redis.shared.model.insert_utils import insert_on_pipeline
@@ -23,7 +25,7 @@ class Model(AbstractModel):
     _store: Store
 
     @classmethod
-    def insert(
+    async def insert(
         cls,
         data: Union[List[AbstractModel], AbstractModel],
         life_span_seconds: Optional[float] = None,
@@ -32,13 +34,13 @@ class Model(AbstractModel):
         Inserts a given row or sets of rows into the table
         """
         store = cls.get_store()
-
         life_span = (
             life_span_seconds
             if life_span_seconds is not None
             else store.life_span_in_seconds
         )
-        with store.redis_store.pipeline(transaction=True) as pipeline:
+
+        async with store.redis_store.pipeline(transaction=True) as pipeline:
             data_list = []
 
             if isinstance(data, list):
@@ -55,10 +57,10 @@ class Model(AbstractModel):
                     life_span=life_span,
                 )
 
-            return pipeline.execute()
+            return await pipeline.execute()
 
     @classmethod
-    def update(
+    async def update(
         cls, _id: Any, data: Dict[str, Any], life_span_seconds: Optional[float] = None
     ):
         """
@@ -70,7 +72,7 @@ class Model(AbstractModel):
             if life_span_seconds is not None
             else store.life_span_in_seconds
         )
-        with store.redis_store.pipeline(transaction=True) as pipeline:
+        async with store.redis_store.pipeline(transaction=True) as pipeline:
             if isinstance(data, dict):
                 insert_on_pipeline(
                     model=cls,
@@ -80,15 +82,16 @@ class Model(AbstractModel):
                     life_span=life_span,
                 )
 
-            return pipeline.execute()
+            return await pipeline.execute()
 
     @classmethod
-    def delete(cls, ids: Union[Any, List[Any]]):
+    async def delete(cls, ids: Union[Any, List[Any]]):
         """
         deletes a given row or sets of rows in the table
         """
         store = cls.get_store()
-        with store.redis_store.pipeline() as pipeline:
+
+        async with store.redis_store.pipeline() as pipeline:
             primary_keys = []
 
             if isinstance(ids, list):
@@ -104,10 +107,10 @@ class Model(AbstractModel):
             # remove the primary keys from the index
             table_index_key = get_table_index_key(model=cls)
             pipeline.srem(table_index_key, *names)
-            return pipeline.execute()
+            return await pipeline.execute()
 
     @classmethod
-    def select(
+    async def select(
         cls,
         columns: Optional[List[str]] = None,
         ids: Optional[List[Any]] = None,
@@ -117,16 +120,18 @@ class Model(AbstractModel):
         Selects given rows or sets of rows in the table
         """
         if columns is None and ids is None:
-            response = select_all_fields_all_ids(model=cls)
+            response = await select_all_fields_all_ids(model=cls)
 
         elif columns is None and isinstance(ids, list):
-            response = select_all_fields_some_ids(model=cls, ids=ids)
+            response = await select_all_fields_some_ids(model=cls, ids=ids)
 
         elif isinstance(columns, list) and ids is None:
-            response = select_some_fields_all_ids(model=cls, fields=columns)
+            response = await select_some_fields_all_ids(model=cls, fields=columns)
 
         elif isinstance(columns, list) and isinstance(ids, list):
-            response = select_some_fields_some_ids(model=cls, fields=columns, ids=ids)
+            response = await select_some_fields_some_ids(
+                model=cls, fields=columns, ids=ids
+            )
 
         else:
             raise ValueError(
