@@ -57,31 +57,10 @@ class AbstractModel(BaseModel):
         """Gets the protected _primary_key_field"""
         return cls._primary_key_field
 
-    #
-    # @classmethod
-    # def get_nested_model_tuple_fields(cls) -> Dict[str, Tuple[Any, ...]]:
-    #     """Returns the fields that have tuples of nested models"""
-    #     raise NotImplementedError("implement get_nested_model_tuple_fields first")
-    #
-    # @classmethod
-    # def get_nested_model_list_fields(cls) -> Dict[str, Type["AbstractModel"]]:
-    #     """Returns the fields that have list of nested models"""
-    #     raise NotImplementedError("implement get_nested_model_list_fields first")
-    #
-    # @classmethod
-    # def get_nested_model_fields(cls) -> Dict[str, Type["AbstractModel"]]:
-    #     """Returns the fields that have nested models"""
-    #     raise NotImplementedError("implement get_nested_model_fields first")
-
     @classmethod
     def get_field_types(cls) -> Dict[str, Any]:
         """Returns the fields types of this model"""
         return cls._field_types
-
-    # @classmethod
-    # def get_store(cls) -> "AbstractStore":
-    #     """Returns the instance of the store for this model"""
-    #     raise NotImplementedError("implement get_store first")
 
     @classmethod
     def initialize(cls):
