@@ -1,11 +1,13 @@
 """Tests for the redis orm"""
 
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 import pytest
 
-from pydantic_redis.config import RedisConfig
-from pydantic_redis.model import Model, strip_leading, NESTED_MODEL_PREFIX
+from pydantic_redis.shared.config import RedisConfig
+from pydantic_redis.shared.model.prop_utils import NESTED_MODEL_PREFIX
+from pydantic_redis.shared.utils import strip_leading
+from pydantic_redis.syncio.model import Model
 from test.conftest import (
     redis_store_fixture,
     Book,
@@ -13,7 +15,6 @@ from test.conftest import (
     Author,
     authors,
     Library,
-    libraries,
 )
 
 

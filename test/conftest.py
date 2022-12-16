@@ -74,10 +74,8 @@ books = [
     ),
 ]
 
-libraries = [Library(name="Babel Library", address="In a book", books=books)]
 redis_store_fixture = [(lazy_fixture("redis_store"))]
 books_fixture = [(lazy_fixture("redis_store"), book) for book in books]
-librares_fixture = [(lazy_fixture("redis_store"), libraries)]
 update_books_fixture = [
     (
         lazy_fixture("redis_store"),
