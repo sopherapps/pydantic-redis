@@ -1,5 +1,5 @@
 """Tests for the redis orm"""
-
+from collections import namedtuple
 from typing import Dict, Any
 
 import pytest
@@ -231,6 +231,28 @@ async def test_select_default(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
+async def test_select_default_paginated(store):
+    """
+    Selecting without arguments returns the book models after
+    skipping `skip` number of models and returning upto `limit` number of items
+    """
+    await AsyncBook.insert(async_books)
+    Record = namedtuple("Record", ["skip", "limit", "expected"])
+    test_data = [
+        Record(0, 2, sorted(async_books[:2], key=lambda x: x.title)),
+        Record(None, 2, sorted(async_books[:2], key=lambda x: x.title)),
+        Record(2, 2, sorted(async_books[2:4], key=lambda x: x.title)),
+        Record(3, 2, sorted(async_books[3:5], key=lambda x: x.title)),
+        Record(0, 3, sorted(async_books[:3], key=lambda x: x.title)),
+    ]
+    for record in test_data:
+        response = await AsyncBook.select(skip=record.skip, limit=record.limit)
+        sorted_response = sorted(response, key=lambda x: x.title)
+        assert record.expected == sorted_response
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("store", async_redis_store_fixture)
 async def test_select_some_columns(store):
     """
     Selecting some columns returns a list of dictionaries of all async_books models with only those columns
@@ -238,7 +260,7 @@ async def test_select_some_columns(store):
     await AsyncBook.insert(async_books)
     async_books_dict = {book.title: book for book in async_books}
     columns = ["title", "author", "in_stock"]
-    response = await AsyncBook.select(columns=["title", "author", "in_stock"])
+    response = await AsyncBook.select(columns=columns)
     response_dict = {book["title"]: book for book in response}
 
     for title, book in async_books_dict.items():
@@ -251,6 +273,44 @@ async def test_select_some_columns(store):
                 assert book_in_response[column] == getattr(book, column)
             else:
                 assert f"{book_in_response[column]}" == f"{getattr(book, column)}"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("store", async_redis_store_fixture)
+async def test_select_some_columns_paginated(store):
+    """
+    Selecting some columns returns a list of dictionaries of all books models with only those columns
+    skipping `skip` number of models and returning upto `limit` number of items
+    """
+    await AsyncBook.insert(async_books)
+    columns = ["title", "author", "in_stock"]
+
+    Record = namedtuple("Record", ["skip", "limit", "expected"])
+    test_data = [
+        Record(0, 2, sorted(async_books[:2], key=lambda x: x.title)),
+        Record(None, 2, sorted(async_books[:2], key=lambda x: x.title)),
+        Record(2, 2, sorted(async_books[2:4], key=lambda x: x.title)),
+        Record(3, 2, sorted(async_books[3:5], key=lambda x: x.title)),
+        Record(0, 3, sorted(async_books[:3], key=lambda x: x.title)),
+    ]
+    for record in test_data:
+        response = await AsyncBook.select(
+            columns=columns, skip=record.skip, limit=record.limit
+        )
+        response_dict = {book["title"]: book for book in response}
+        books_dict = {book.title: book for book in record.expected}
+        assert len(record.expected) == len(response_dict)
+
+        for title, book in books_dict.items():
+            book_in_response = response_dict[title]
+            assert isinstance(book_in_response, dict)
+            assert sorted(book_in_response.keys()) == sorted(columns)
+
+            for column in columns:
+                if column == "author":
+                    assert book_in_response[column] == getattr(book, column)
+                else:
+                    assert f"{book_in_response[column]}" == f"{getattr(book, column)}"
 
 
 @pytest.mark.asyncio

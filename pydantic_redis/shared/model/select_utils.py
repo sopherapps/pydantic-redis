@@ -1,5 +1,5 @@
 """Module containing the mixin functionality for selecting"""
-from typing import List, Any, Type, Union, Awaitable
+from typing import List, Any, Type, Union, Awaitable, Optional
 
 from pydantic_redis.shared.model.prop_utils import (
     NESTED_MODEL_PREFIX,
@@ -7,6 +7,7 @@ from pydantic_redis.shared.model.prop_utils import (
     NESTED_MODEL_TUPLE_FIELD_PREFIX,
     get_table_keys_regex,
     get_table_prefix,
+    get_table_index_key,
 )
 
 
@@ -39,12 +40,24 @@ def get_select_fields(model: Type[AbstractModel], columns: List[str]) -> List[st
 
 def select_all_fields_all_ids(
     model: Type[AbstractModel],
+    skip: int = 0,
+    limit: Optional[int] = None,
 ) -> Union[List[List[Any]], Awaitable[List[List[Any]]]]:
-    """Selects all items in the database, returning all their fields"""
-    table_keys_regex = get_table_keys_regex(model=model)
-    args = [table_keys_regex]
-    store = model.get_store()
-    return store.select_all_fields_for_all_ids_script(args=args)
+    """
+    Selects all items in the database, returning all their fields
+
+    However, if `limit` is set, the number of items
+    returned will be less or equal to `limit`.
+    `skip` defaults to 0. It is the number of items to skip.
+    `skip` is only relevant when limit is specified.
+    """
+    if isinstance(limit, int):
+        return _select_all_ids_all_fields_paginated(model=model, limit=limit, skip=skip)
+    else:
+        table_keys_regex = get_table_keys_regex(model=model)
+        args = [table_keys_regex]
+        store = model.get_store()
+        return store.select_all_fields_for_all_ids_script(args=args)
 
 
 def select_all_fields_some_ids(
@@ -58,14 +71,30 @@ def select_all_fields_some_ids(
 
 
 def select_some_fields_all_ids(
-    model: Type[AbstractModel], fields: List[str]
+    model: Type[AbstractModel],
+    fields: List[str],
+    skip: int = 0,
+    limit: Optional[int] = None,
 ) -> Union[List[List[Any]], Awaitable[List[List[Any]]]]:
-    """Selects all items in the database, returning only the specified fields"""
-    table_keys_regex = get_table_keys_regex(model=model)
+    """
+    Selects all items in the database, returning only the specified fields.
+
+    However, if `limit` is set, the number of items
+    returned will be less or equal to `limit`.
+    `skip` defaults to 0. It is the number of items to skip.
+    `skip` is only relevant when limit is specified.
+    """
     columns = get_select_fields(model=model, columns=fields)
-    args = [table_keys_regex, *columns]
-    store = model.get_store()
-    return store.select_some_fields_for_all_ids_script(args=args)
+
+    if isinstance(limit, int):
+        return _select_some_fields_all_ids_paginated(
+            model=model, columns=columns, limit=limit, skip=skip
+        )
+    else:
+        table_keys_regex = get_table_keys_regex(model=model)
+        args = [table_keys_regex, *columns]
+        store = model.get_store()
+        return store.select_some_fields_for_all_ids_script(args=args)
 
 
 def select_some_fields_some_ids(
@@ -100,3 +129,27 @@ def parse_select_response(
         ]
 
     return [model.deserialize_partially(record) for record in response if record != []]
+
+
+def _select_all_ids_all_fields_paginated(
+    model: Type[AbstractModel], limit: int, skip: Optional[int]
+):
+    """Selects all fields for at most `limit` number of items after skipping `skip` items"""
+    if skip is None:
+        skip = 0
+    table_index_key = get_table_index_key(model)
+    args = [table_index_key, skip, limit]
+    store = model.get_store()
+    return store.paginated_select_all_fields_for_all_ids_script(args=args)
+
+
+def _select_some_fields_all_ids_paginated(
+    model: Type[AbstractModel], columns: List[str], limit: int, skip: int
+):
+    """Selects some fields for at most `limit` number of items after skipping `skip` items"""
+    if skip is None:
+        skip = 0
+    table_index_key = get_table_index_key(model)
+    args = [table_index_key, skip, limit, *columns]
+    store = model.get_store()
+    return store.paginated_select_some_fields_for_all_ids_script(args=args)

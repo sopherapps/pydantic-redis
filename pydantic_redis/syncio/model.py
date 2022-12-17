@@ -13,6 +13,7 @@ from pydantic_redis.shared.model.select_utils import (
 )
 
 from .store import Store
+from ..shared.model.delete_utils import delete_on_pipeline
 
 
 class Model(AbstractModel):
@@ -89,21 +90,7 @@ class Model(AbstractModel):
         """
         store = cls.get_store()
         with store.redis_store.pipeline() as pipeline:
-            primary_keys = []
-
-            if isinstance(ids, list):
-                primary_keys = ids
-            elif ids is not None:
-                primary_keys = [ids]
-
-            names = [
-                get_primary_key(model=cls, primary_key_value=primary_key_value)
-                for primary_key_value in primary_keys
-            ]
-            pipeline.delete(*names)
-            # remove the primary keys from the index
-            table_index_key = get_table_index_key(model=cls)
-            pipeline.srem(table_index_key, *names)
+            delete_on_pipeline(model=cls, pipeline=pipeline, ids=ids)
             return pipeline.execute()
 
     @classmethod
@@ -111,19 +98,30 @@ class Model(AbstractModel):
         cls,
         columns: Optional[List[str]] = None,
         ids: Optional[List[Any]] = None,
+        skip: int = 0,
+        limit: Optional[int] = None,
         **kwargs,
     ):
         """
         Selects given rows or sets of rows in the table
+
+        However, if `limit` is set, the number of items
+        returned will be less or equal to `limit`.
+        `skip` defaults to 0. It is the number of items to skip.
+        `skip` is only relevant when limit is specified.
+
+        `skip` and `limit` are irrelevant when `ids` are provided.
         """
         if columns is None and ids is None:
-            response = select_all_fields_all_ids(model=cls)
+            response = select_all_fields_all_ids(model=cls, skip=skip, limit=limit)
 
         elif columns is None and isinstance(ids, list):
             response = select_all_fields_some_ids(model=cls, ids=ids)
 
         elif isinstance(columns, list) and ids is None:
-            response = select_some_fields_all_ids(model=cls, fields=columns)
+            response = select_some_fields_all_ids(
+                model=cls, fields=columns, skip=skip, limit=limit
+            )
 
         elif isinstance(columns, list) and isinstance(ids, list):
             response = select_some_fields_some_ids(model=cls, fields=columns, ids=ids)

@@ -1,4 +1,5 @@
 """Module containing the mixin for insert functionality in model"""
+from datetime import datetime
 from typing import Union, Optional, Any, Dict, Tuple, List, Type
 
 from redis.asyncio.client import Pipeline as AioPipeline
@@ -37,9 +38,10 @@ def insert_on_pipeline(
 
     if life_span is not None:
         pipeline.expire(name=name, time=life_span)
-    # save the primary key in an index
+    # save the primary key in an index: a sorted set, whose score is current timestamp
     table_index_key = get_table_index_key(model)
-    pipeline.sadd(table_index_key, name)
+    timestamp = datetime.utcnow().timestamp()
+    pipeline.zadd(table_index_key, {name: timestamp})
     if life_span is not None:
         pipeline.expire(table_index_key, time=life_span)
 
@@ -113,8 +115,8 @@ def _serialize_nested_model_tuple_field(
                 record=item,
                 life_span=life_span,
             )
-            # FIXME: The reference to AbstractModel here. Is it right?
-            if issubclass(field_type, AbstractModel) else item
+            if issubclass(field_type, AbstractModel)
+            else item
             for field_type, item in zip(field_types, value)
         ]
         key = f"{NESTED_MODEL_TUPLE_FIELD_PREFIX}{key}"
