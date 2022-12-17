@@ -12,6 +12,8 @@ from .lua_scripts import (
     SELECT_ALL_FIELDS_FOR_SOME_IDS_SCRIPT,
     SELECT_SOME_FIELDS_FOR_ALL_IDS_SCRIPT,
     SELECT_SOME_FIELDS_FOR_SOME_IDS_SCRIPT,
+    PAGINATED_SELECT_ALL_FIELDS_FOR_ALL_IDS_SCRIPT,
+    PAGINATED_SELECT_SOME_FIELDS_FOR_ALL_IDS_SCRIPT,
 )
 
 from typing import TYPE_CHECKING
@@ -30,8 +32,14 @@ class AbstractStore(BaseModel):
     redis_store: Optional[Union[Redis, AioRedis]] = None
     life_span_in_seconds: Optional[int] = None
     select_all_fields_for_all_ids_script: Optional[Union[AsyncScript, Script]] = None
+    paginated_select_all_fields_for_all_ids_script: Optional[
+        Union[AsyncScript, Script]
+    ] = None
     select_all_fields_for_some_ids_script: Optional[Union[AsyncScript, Script]] = None
     select_some_fields_for_all_ids_script: Optional[Union[AsyncScript, Script]] = None
+    paginated_select_some_fields_for_all_ids_script: Optional[
+        Union[AsyncScript, Script]
+    ] = None
     select_some_fields_for_some_ids_script: Optional[Union[AsyncScript, Script]] = None
     models: Dict[str, Type["AbstractModel"]] = {}
 
@@ -67,11 +75,21 @@ class AbstractStore(BaseModel):
         self.select_all_fields_for_all_ids_script = self.redis_store.register_script(
             SELECT_ALL_FIELDS_FOR_ALL_IDS_SCRIPT
         )
+        self.paginated_select_all_fields_for_all_ids_script = (
+            self.redis_store.register_script(
+                PAGINATED_SELECT_ALL_FIELDS_FOR_ALL_IDS_SCRIPT
+            )
+        )
         self.select_all_fields_for_some_ids_script = self.redis_store.register_script(
             SELECT_ALL_FIELDS_FOR_SOME_IDS_SCRIPT
         )
         self.select_some_fields_for_all_ids_script = self.redis_store.register_script(
             SELECT_SOME_FIELDS_FOR_ALL_IDS_SCRIPT
+        )
+        self.paginated_select_some_fields_for_all_ids_script = (
+            self.redis_store.register_script(
+                PAGINATED_SELECT_SOME_FIELDS_FOR_ALL_IDS_SCRIPT
+            )
         )
         self.select_some_fields_for_some_ids_script = self.redis_store.register_script(
             SELECT_SOME_FIELDS_FOR_SOME_IDS_SCRIPT

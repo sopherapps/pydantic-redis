@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2022-12-17
+
+### Added
+
+- Added pagination
+
+### Changed
+
+- Changed redis index to use sorted sets instead of ordinary sets
+
 ## [0.3.0] - 2022-12-15
 
 ### Added

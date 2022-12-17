@@ -38,7 +38,8 @@ from pydantic_redis import RedisConfig, Model, Store
 
 class Author(Model):
   """
-  An Author model, just like a pydantic model with appropriate type annotations
+  An Author model, just like a pydantic model with appropriate 
+  type annotations
   NOTE: The `_primary_key_field` is mandatory
   """
   _primary_key_field: str = 'name'
@@ -51,18 +52,24 @@ class Book(Model):
   A Book model.
   
   Models can have the following field types
-  - The usual i.e. float, int, dict, list, date, str, dict, Optional etc as long as they are serializable by orjson
+  - The usual i.e. float, int, dict, list, date, str, dict, Optional etc
+    as long as they are serializable by orjson
   - Nested models e.g. `author: Author` or `author: Optional[Author]`
-  - List of nested models e.g. `authors: List[Author]` or `authors: Optional[List[Author]]`
-  - Tuples including nested models e.g. `access_log: Tuple[Author, date]` or `access_log: Optional[Tuple[Author, date]]]`
+  - List of nested models e.g. `authors: List[Author]` 
+    or `authors: Optional[List[Author]]`
+  - Tuples including nested models e.g. `access_log: Tuple[Author, date]` 
+    or `access_log: Optional[Tuple[Author, date]]]`
   
-  NOTE: 1. Any nested model whether plain or in a list or tuple will automatically inserted into the redis store
-       when the parent model is inserted. e.g. a Book with an author field, when inserted, will also insert
-       the author. The author can then be queried directly if that's something one wishes to do.
+  NOTE: 1. Any nested model whether plain or in a list or tuple will automatically 
+        inserted into the redis store when the parent model is inserted. 
+        e.g. a Book with an author field, when inserted, will also insert
+       the author. The author can then be queried directly if that's something 
+       one wishes to do.
        
-       2. When a parent model is inserted with a nested model instance that already exists, the older nested model 
-       instance is overwritten. This is one way of updating nested models. All parent models that contain that nested
-       model instance will see the change. 
+       2. When a parent model is inserted with a nested model instance that 
+       already exists, the older nested model instance is overwritten. 
+       This is one way of updating nested models. 
+       All parent models that contain that nested model instance will see the change. 
   """
   _primary_key_field: str = 'title'
   title: str
@@ -81,8 +88,10 @@ class Library(Model):
   
   About Nested Model Performance
   ---
-  To minimize the performance penalty for nesting models, we use REDIS EVALSHA to eagerly load the nested models
-  before the response is returned to the client. This ensures that only ONE network call is made every time.
+  To minimize the performance penalty for nesting models, 
+  we use REDIS EVALSHA to eagerly load the nested models
+  before the response is returned to the client.
+  This ensures that only ONE network call is made every time.
   """
   _primary_key_field: str = 'name'
   name: str
@@ -180,14 +189,25 @@ print(all_books)
 # Prints [Book(title="Oliver Twist", author="Charles Dickens", published_on=date(year=1215, month=4, day=4), 
 # in_stock=False), Book(...]
 
+# or paginate i.e. skip some books and return only upto a given number
+paginated_books = Book.select(skip=2, limit=2)
+print(paginated_books)
+
 # Get some, with all fields shown. Data returned is a list of models instances.
 some_books = Book.select(ids=["Oliver Twist", "Jane Eyre"])
 print(some_books)
+
+# Note: Pagination does not work when ids are provided i.e.
+assert some_books == Book.select(ids=["Oliver Twist", "Jane Eyre"], skip=100, limit=10)
 
 # Get all, with only a few fields shown. Data returned is a list of dictionaries.
 books_with_few_fields = Book.select(columns=["author", "in_stock"])
 print(books_with_few_fields)
 # Prints [{"author": "'Charles Dickens", "in_stock": "True"},...]
+
+# or paginate i.e. skip some books and return only upto a given number
+paginated_books_with_few_fields = Book.select(columns=["author", "in_stock"], skip=2, limit=2)
+print(paginated_books_with_few_fields)
 
 # Get some, with only some fields shown. Data returned is a list of dictionaries.
 some_books_with_few_fields = Book.select(ids=["Oliver Twist", "Jane Eyre"], columns=["author", "in_stock"])
@@ -217,13 +237,15 @@ from datetime import date
 from typing import Tuple, List, Optional
 from pydantic_redis.asyncio import RedisConfig, Model, Store
 
-# The features are exactly the same as the synchronous version, except for the ability
-# to return coroutines when `insert`, `update`, `select` or `delete` are called.
+# The features are exactly the same as the synchronous version, 
+# except for the ability to return coroutines when `insert`, 
+# `update`, `select` or `delete` are called.
 
 
 class Author(Model):
   """
-  An Author model, just like a pydantic model with appropriate type annotations
+  An Author model, just like a pydantic model with appropriate 
+  type annotations
   NOTE: The `_primary_key_field` is mandatory
   """
   _primary_key_field: str = 'name'
@@ -236,18 +258,24 @@ class Book(Model):
   A Book model.
   
   Models can have the following field types
-  - The usual i.e. float, int, dict, list, date, str, dict, Optional etc as long as they are serializable by orjson
+  - The usual i.e. float, int, dict, list, date, str, dict, Optional etc
+    as long as they are serializable by orjson
   - Nested models e.g. `author: Author` or `author: Optional[Author]`
-  - List of nested models e.g. `authors: List[Author]` or `authors: Optional[List[Author]]`
-  - Tuples including nested models e.g. `access_log: Tuple[Author, date]` or `access_log: Optional[Tuple[Author, date]]]`
+  - List of nested models e.g. `authors: List[Author]` 
+    or `authors: Optional[List[Author]]`
+  - Tuples including nested models e.g. `access_log: Tuple[Author, date]` 
+    or `access_log: Optional[Tuple[Author, date]]]`
   
-  NOTE: 1. Any nested model whether plain or in a list or tuple will automatically inserted into the redis store
-       when the parent model is inserted. e.g. a Book with an author field, when inserted, will also insert
-       the author. The author can then be queried directly if that's something one wishes to do.
+  NOTE: 1. Any nested model whether plain or in a list or tuple will automatically 
+        inserted into the redis store when the parent model is inserted. 
+        e.g. a Book with an author field, when inserted, will also insert
+       the author. The author can then be queried directly if that's something 
+       one wishes to do.
        
-       2. When a parent model is inserted with a nested model instance that already exists, the older nested model 
-       instance is overwritten. This is one way of updating nested models. All parent models that contain that nested
-       model instance will see the change. 
+       2. When a parent model is inserted with a nested model instance that 
+       already exists, the older nested model instance is overwritten. 
+       This is one way of updating nested models. 
+       All parent models that contain that nested model instance will see the change. 
   """
   _primary_key_field: str = 'title'
   title: str
@@ -266,8 +294,10 @@ class Library(Model):
   
   About Nested Model Performance
   ---
-  To minimize the performance penalty for nesting models, we use REDIS EVALSHA to eagerly load the nested models
-  before the response is returned to the client. This ensures that only ONE network call is made every time.
+  To minimize the performance penalty for nesting models, 
+  we use REDIS EVALSHA to eagerly load the nested models
+  before the response is returned to the client.
+  This ensures that only ONE network call is made every time.
   """
   _primary_key_field: str = 'name'
   name: str
@@ -367,14 +397,25 @@ async def run_async():
   # Prints [Book(title="Oliver Twist", author="Charles Dickens", published_on=date(year=1215, month=4, day=4), 
   # in_stock=False), Book(...]
   
+  # or paginate i.e. skip some books and return only upto a given number
+  paginated_books = await Book.select(skip=2, limit=2)
+  print(paginated_books)
+    
   # Get some, with all fields shown. Data returned is a list of models instances.
   some_books = await Book.select(ids=["Oliver Twist", "Jane Eyre"])
   print(some_books)
+  
+  # Note: Pagination does not work when ids are provided i.e.
+  assert some_books == await Book.select(ids=["Oliver Twist", "Jane Eyre"], skip=100, limit=10)
   
   # Get all, with only a few fields shown. Data returned is a list of dictionaries.
   books_with_few_fields = await Book.select(columns=["author", "in_stock"])
   print(books_with_few_fields)
   # Prints [{"author": "'Charles Dickens", "in_stock": "True"},...]
+  
+  # or paginate i.e. skip some books and return only upto a given number
+  paginated_books_with_few_fields = await Book.select(columns=["author", "in_stock"], skip=2, limit=2)
+  print(paginated_books_with_few_fields)
   
   # Get some, with only some fields shown. Data returned is a list of dictionaries.
   some_books_with_few_fields = await Book.select(ids=["Oliver Twist", "Jane Eyre"], columns=["author", "in_stock"])
@@ -440,30 +481,32 @@ asyncio.run(run_async())
 On an average PC ~16GB RAM, i7 Core
 
 ```
-------------------------------------------------- benchmark: 20 tests -------------------------------------------------
-Name (time in us)                                              Mean                 Min                   Max          
------------------------------------------------------------------------------------------------------------------------
-benchmark_select_columns_for_one_id[redis_store-book1]     143.5316 (1.08)     117.4340 (1.0)        347.5900 (1.0)    
-benchmark_select_columns_for_one_id[redis_store-book3]     151.6032 (1.14)     117.6690 (1.00)       405.4620 (1.17)   
-benchmark_select_columns_for_one_id[redis_store-book0]     133.0856 (1.0)      117.8720 (1.00)       403.9400 (1.16)   
-benchmark_select_columns_for_one_id[redis_store-book2]     156.8152 (1.18)     118.7220 (1.01)       569.9800 (1.64)   
-benchmark_select_columns_for_some_items[redis_store]       138.0488 (1.04)     120.1550 (1.02)       350.7040 (1.01)   
-benchmark_delete[redis_store-Wuthering Heights]            199.9205 (1.50)     127.6990 (1.09)     1,092.2190 (3.14)   
-benchmark_bulk_delete[redis_store]                         178.4756 (1.34)     143.7480 (1.22)       647.6660 (1.86)   
-benchmark_select_all_for_one_id[redis_store-book1]         245.7787 (1.85)     195.2030 (1.66)       528.9250 (1.52)   
-benchmark_select_all_for_one_id[redis_store-book0]         239.1152 (1.80)     199.4360 (1.70)       767.2540 (2.21)   
-benchmark_select_all_for_one_id[redis_store-book3]         243.8724 (1.83)     200.8060 (1.71)       535.3640 (1.54)   
-benchmark_select_all_for_one_id[redis_store-book2]         256.1625 (1.92)     202.4630 (1.72)       701.3000 (2.02)   
-benchmark_update[redis_store-Wuthering Heights-data0]      329.1363 (2.47)     266.9700 (2.27)       742.1360 (2.14)   
-benchmark_select_some_items[redis_store]                   301.0471 (2.26)     268.9410 (2.29)       551.1060 (1.59)   
-benchmark_select_columns[redis_store]                      313.4356 (2.36)     281.4460 (2.40)       578.7730 (1.67)   
-benchmark_single_insert[redis_store-book2]                 348.5624 (2.62)     297.3610 (2.53)       580.8780 (1.67)   
-benchmark_single_insert[redis_store-book1]                 342.1879 (2.57)     297.5410 (2.53)       650.5420 (1.87)   
-benchmark_single_insert[redis_store-book0]                 366.4513 (2.75)     310.1640 (2.64)       660.5380 (1.90)   
-benchmark_single_insert[redis_store-book3]                 377.6208 (2.84)     327.5290 (2.79)       643.4090 (1.85)   
-benchmark_select_default[redis_store]                      486.6931 (3.66)     428.8810 (3.65)     1,181.9620 (3.40)   
-benchmark_bulk_insert[redis_store]                         897.7862 (6.75)     848.7410 (7.23)     1,188.5160 (3.42)   
------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------- benchmark: 22 tests --------------------------------------------------
+Name (time in us)                                                Mean                 Min                   Max          
+-------------------------------------------------------------------------------------------------------------------------
+benchmark_select_columns_for_one_id[redis_store-book2]       124.2687 (1.00)     115.4530 (1.0)        331.8030 (1.26)   
+benchmark_select_columns_for_one_id[redis_store-book0]       123.7213 (1.0)      115.6680 (1.00)       305.7170 (1.16)   
+benchmark_select_columns_for_one_id[redis_store-book3]       124.4495 (1.01)     115.9580 (1.00)       263.4370 (1.0)    
+benchmark_select_columns_for_one_id[redis_store-book1]       124.8431 (1.01)     117.4770 (1.02)       310.3140 (1.18)   
+benchmark_select_columns_for_some_items[redis_store]         128.0657 (1.04)     118.6380 (1.03)       330.2680 (1.25)   
+benchmark_delete[redis_store-Wuthering Heights]              131.8713 (1.07)     125.9920 (1.09)       328.9660 (1.25)   
+benchmark_bulk_delete[redis_store]                           148.6963 (1.20)     142.3190 (1.23)       347.4750 (1.32)   
+benchmark_select_all_for_one_id[redis_store-book3]           211.6941 (1.71)     195.6520 (1.69)       422.8840 (1.61)   
+benchmark_select_all_for_one_id[redis_store-book2]           212.3612 (1.72)     195.9020 (1.70)       447.4910 (1.70)   
+benchmark_select_all_for_one_id[redis_store-book1]           212.9524 (1.72)     197.7530 (1.71)       423.3030 (1.61)   
+benchmark_select_all_for_one_id[redis_store-book0]           214.9924 (1.74)     198.8280 (1.72)       402.6310 (1.53)   
+benchmark_select_columns_paginated[redis_store]              227.9248 (1.84)     211.0610 (1.83)       425.8390 (1.62)   
+benchmark_select_some_items[redis_store]                     297.5700 (2.41)     271.1510 (2.35)       572.1220 (2.17)   
+benchmark_select_default_paginated[redis_store]              301.7495 (2.44)     282.6500 (2.45)       490.3450 (1.86)   
+benchmark_select_columns[redis_store]                        316.2119 (2.56)     290.6110 (2.52)       578.0310 (2.19)   
+benchmark_update[redis_store-Wuthering Heights-data0]        346.5816 (2.80)     304.5420 (2.64)       618.0250 (2.35)   
+benchmark_single_insert[redis_store-book2]                   378.0613 (3.06)     337.8070 (2.93)       616.4930 (2.34)   
+benchmark_single_insert[redis_store-book0]                   396.6513 (3.21)     347.1000 (3.01)       696.1350 (2.64)   
+benchmark_single_insert[redis_store-book3]                   395.9082 (3.20)     361.0980 (3.13)       623.8630 (2.37)   
+benchmark_single_insert[redis_store-book1]                   401.1377 (3.24)     363.5890 (3.15)       610.4400 (2.32)   
+benchmark_select_default[redis_store]                        498.4673 (4.03)     428.1350 (3.71)       769.7640 (2.92)   
+benchmark_bulk_insert[redis_store]                         1,025.0436 (8.29)     962.2230 (8.33)     1,200.3840 (4.56)   
+-------------------------------------------------------------------------------------------------------------------------
 ```
 
 ## Contributions

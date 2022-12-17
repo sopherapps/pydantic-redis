@@ -31,10 +31,24 @@ def test_benchmark_select_default(benchmark, store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
+def test_benchmark_select_default_paginated(benchmark, store):
+    """Benchmarks the select default operation when paginated"""
+    Book.insert(books)
+    benchmark(Book.select, skip=2, limit=2)
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
 def test_benchmark_select_columns(benchmark, store):
     """Benchmarks the select columns operation"""
     Book.insert(books)
     benchmark(Book.select, columns=["title", "author", "in_stock"])
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_benchmark_select_columns_paginated(benchmark, store):
+    """Benchmarks the select columns operation, when paginated"""
+    Book.insert(books)
+    benchmark(Book.select, columns=["title", "author", "in_stock"], skip=2, limit=2)
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
