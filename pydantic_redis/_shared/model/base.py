@@ -4,7 +4,7 @@ from typing import Dict, Tuple, Any, Type, Union, List, Optional
 
 from pydantic import BaseModel
 
-from pydantic_redis.shared.utils import (
+from pydantic_redis._shared.utils import (
     typing_get_origin,
     typing_get_args,
     from_any_to_str_or_bytes,

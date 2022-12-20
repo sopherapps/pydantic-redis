@@ -1,0 +1,49 @@
+site_name: Pydantic-redis
+site_description: Pydantic-redis, simple declarative ORM for redis
+site_url: https://sopherapps.github.io/pydantic-redis/
+
+theme:
+  name: material
+  palette:
+  - media: '(prefers-color-scheme: light)'
+    scheme: default
+    toggle:
+      icon: material/lightbulb
+      name: Switch to light mode
+  - media: '(prefers-color-scheme: dark)'
+    scheme: slate
+    toggle:
+      icon: material/lightbulb-outline
+      name: Switch to dark mode
+  features:
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+
+plugins:
+  - search
+  - mkdocstrings
+
+repo_name: sopherapps/pydantic-redis
+repo_url: https://github.com/sopherapps/pydantic-redis
+
+nav:
+  - 'Pydantic-redis': index.md
+  - Tutorials:
+      - Synchronous API:
+        - tutorials/synchronous/getting-started.md
+      - Asynchronous API:
+          - tutorials/asynchronous/getting-started.md
+  - 'How-to Guides':
+      - how-to-guides/creating-nested-models.md
+      - how-to-guides/paginating-queries.md
+  - 'Explanation':
+      - explanation/why-use-orms.md
+  - reference.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences

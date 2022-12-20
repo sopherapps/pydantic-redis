@@ -3,7 +3,7 @@ from typing import Dict, Type, TYPE_CHECKING
 
 from redis import asyncio as redis
 
-from ..shared.store import AbstractStore
+from .._shared.store import AbstractStore
 
 if TYPE_CHECKING:
     from .model import Model

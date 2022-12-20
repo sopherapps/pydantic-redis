@@ -1,12 +1,9 @@
 """Module containing the model classes"""
-from typing import Optional, List, Any, Union, Dict, Tuple, Type
+from typing import Optional, List, Any, Union, Dict
 
-import redis.asyncio
-
-from pydantic_redis.shared.model import AbstractModel
-from pydantic_redis.shared.model.insert_utils import insert_on_pipeline
-from pydantic_redis.shared.model.prop_utils import get_primary_key, get_table_index_key
-from pydantic_redis.shared.model.select_utils import (
+from .._shared.model import AbstractModel
+from .._shared.model.insert_utils import insert_on_pipeline
+from .._shared.model.select_utils import (
     select_all_fields_all_ids,
     select_all_fields_some_ids,
     select_some_fields_all_ids,
@@ -15,7 +12,7 @@ from pydantic_redis.shared.model.select_utils import (
 )
 
 from .store import Store
-from ..shared.model.delete_utils import delete_on_pipeline
+from .._shared.model.delete_utils import delete_on_pipeline
 
 
 class Model(AbstractModel):

@@ -1,7 +1,7 @@
 """Module containing the mixin functionality for selecting"""
 from typing import List, Any, Type, Union, Awaitable, Optional
 
-from pydantic_redis.shared.model.prop_utils import (
+from pydantic_redis._shared.model.prop_utils import (
     NESTED_MODEL_PREFIX,
     NESTED_MODEL_LIST_FIELD_PREFIX,
     NESTED_MODEL_TUPLE_FIELD_PREFIX,

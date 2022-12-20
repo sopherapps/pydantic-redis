@@ -1,6 +1,9 @@
-"""Package containing the synchronous and thus default version of pydantic_redis"""
+"""Synchronous version of pydantic-redis ORM
+
+"""
+
 from .model import Model
 from .store import Store
-from ..shared.config import RedisConfig
+from .._shared.config import RedisConfig
 
 __all__ = [Model, Store, RedisConfig]

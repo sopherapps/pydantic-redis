@@ -4,9 +4,9 @@ from typing import Dict, Any
 
 import pytest
 
-from pydantic_redis.shared.config import RedisConfig
-from pydantic_redis.shared.model.prop_utils import NESTED_MODEL_PREFIX
-from pydantic_redis.shared.utils import strip_leading
+from pydantic_redis._shared.config import RedisConfig  # noqa
+from pydantic_redis._shared.model.prop_utils import NESTED_MODEL_PREFIX  # noqa
+from pydantic_redis._shared.utils import strip_leading  # noqa
 from pydantic_redis.syncio.model import Model
 from test.conftest import (
     redis_store_fixture,

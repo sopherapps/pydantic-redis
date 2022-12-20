@@ -4,8 +4,8 @@ from typing import Type, Union, List
 from redis.client import Pipeline
 from redis.asyncio.client import Pipeline as AioPipeline
 
-from pydantic_redis.shared.model import AbstractModel
-from pydantic_redis.shared.model.prop_utils import get_primary_key, get_table_index_key
+from pydantic_redis._shared.model import AbstractModel
+from pydantic_redis._shared.model.prop_utils import get_primary_key, get_table_index_key
 
 
 def delete_on_pipeline(

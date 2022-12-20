@@ -1,4 +1,6 @@
-"""Module containing the main config classes"""
+"""Defines the `RedisConfig` for connecting to a redis server
+
+"""
 from typing import Optional
 
 from pydantic import BaseModel
