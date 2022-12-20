@@ -40,6 +40,7 @@ nav:
   - 'Explanation':
       - explanation/why-use-orms.md
   - reference.md
+  - change-log.md
 
 markdown_extensions:
   - pymdownx.highlight:

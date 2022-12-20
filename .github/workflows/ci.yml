@@ -64,3 +64,6 @@ jobs:
       - name: Upload to pypi
         run: |
           twine upload -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} dist/*
+      - name: Deploy docs
+        run: |
+          mkdocs gh-deploy
