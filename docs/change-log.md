@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2022-12-20
+
+### Added
+
+### Changed
+
+### Fixed
+
+- Fixed docs building in CI
+
 ## [0.4.1] - 2022-12-20
 
 ### Added
