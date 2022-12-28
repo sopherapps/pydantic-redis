@@ -5,16 +5,16 @@ site_url: https://sopherapps.github.io/pydantic-redis/
 theme:
   name: material
   palette:
-  - media: '(prefers-color-scheme: light)'
-    scheme: default
-    toggle:
-      icon: material/lightbulb
-      name: Switch to light mode
-  - media: '(prefers-color-scheme: dark)'
-    scheme: slate
-    toggle:
-      icon: material/lightbulb-outline
-      name: Switch to dark mode
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      toggle:
+        icon: material/lightbulb
+        name: Switch to light mode
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to dark mode
   features:
     - search.suggest
     - search.highlight
@@ -30,13 +30,12 @@ repo_url: https://github.com/sopherapps/pydantic-redis
 nav:
   - 'Pydantic-redis': index.md
   - Tutorials:
+      - tutorials/intro.md
       - Synchronous API:
-        - tutorials/synchronous/getting-started.md
+          - tutorials/synchronous/models.md
+          - tutorials/synchronous/nested-models.md
       - Asynchronous API:
-          - tutorials/asynchronous/getting-started.md
-  - 'How-to Guides':
-      - how-to-guides/creating-nested-models.md
-      - how-to-guides/paginating-queries.md
+          - tutorials/asynchronous/models.md
   - 'Explanation':
       - explanation/why-use-orms.md
   - reference.md
@@ -48,3 +47,11 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - mdx_include:
+      base_path: docs
+extra_css:
+  - css/termynal.css
+  - css/custom.css
+extra_javascript:
+  - js/termynal.js
+  - js/custom.js

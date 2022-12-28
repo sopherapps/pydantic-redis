@@ -14,3 +14,4 @@ pytest-asyncio
 mkdocs
 mkdocstrings
 mkdocs-material
+mdx_include
