@@ -10,7 +10,7 @@ so that one can go directly to a specific topic, just like a reference.
 ## Synchronous API
 
 In case you are looking to use pydantic-redis without async/await, you can read the **Synchronous API** version of this
-tutorial. 
+tutorial.
 
 This is the default API for pydantic-redis.
 
@@ -19,6 +19,20 @@ This is the default API for pydantic-redis.
 In case you are looking to use pydantic-redis with async/await, e.g. in [FastAPI](https://fastapi.tiangolo.com)
 or [asyncio](https://docs.python.org/3/library/asyncio.html) , you can read the **Asynchronous API** version of this
 tutorial.
+
+## Install Python
+
+Pydantic-redis requires python 3.6 and above. The latest stable python version is the recommended version.
+
+You can install python from [the official python downloads site](https://www.python.org/downloads/).
+
+## Install Redis
+
+In order to use pydantic-redis, you need a redis server instance running. You can install a local instance
+via [the official redis stack](https://redis.io/docs/stack/get-started/install/) instructions.
+
+You may also need a visual client to view the data in redis. The recommended app to use
+is [RedisInsight](https://redis.com/redis-enterprise/redis-insight/).
 
 ## Run the Code
 
