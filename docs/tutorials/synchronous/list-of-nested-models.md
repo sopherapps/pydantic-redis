@@ -1,4 +1,4 @@
-# Fields of Lists of Nested Models
+# Lists of Nested Models
 
 Sometimes, one might need to have models (schemas) that have lists of other models (schemas).
 
@@ -49,7 +49,7 @@ Use standard Python types for all attributes, as before.
 
 Annotate the field that is to hold the child model list with the List of child class. 
 
-In this case, the field `files` is annotated with `File` class.
+In this case, the field `files` is annotated with `List[File]`.
 
 And the field `folders` is annotated with `"Folder"` class i.e. itself.
 

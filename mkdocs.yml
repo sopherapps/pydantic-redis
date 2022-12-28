@@ -35,6 +35,7 @@ nav:
           - tutorials/synchronous/models.md
           - tutorials/synchronous/nested-models.md
           - tutorials/synchronous/list-of-nested-models.md
+          - tutorials/synchronous/tuple-of-nested-models.md
       - Asynchronous API:
           - tutorials/asynchronous/models.md
   - 'Explanation':
