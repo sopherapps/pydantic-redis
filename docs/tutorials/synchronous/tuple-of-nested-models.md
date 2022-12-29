@@ -91,7 +91,7 @@ Then you can use the parent model class to:
 The store is connected to the Redis instance, so any changes you make will
 reflect in redis itself.
 
-```Python hl_lines="25-27"
+```Python hl_lines="25-35"
 {!../docs_src/tutorials/synchronous/tuple-of-nested-models.py!}
 ```
 
@@ -102,7 +102,7 @@ You can also use the child model independently.
 Any mutation on the child model will also be reflected in the any parent model instances 
 fetched from redis after that mutation.
 
-```Python hl_lines="29-30"
+```Python hl_lines="37-38"
 {!../docs_src/tutorials/synchronous/tuple-of-nested-models.py!}
 ```
 
@@ -114,7 +114,7 @@ Set the attribute containing the child model tuple with a tuple of instances of 
 
 If there is any new instance of the child model that has a pre-existing primary key, it will be updated in redis.
 
-```Python hl_lines="32-36"
+```Python hl_lines="40-49"
 {!../docs_src/tutorials/synchronous/tuple-of-nested-models.py!}
 ```
 
