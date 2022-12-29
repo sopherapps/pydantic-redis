@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [0.4.1] - 2022-12-29
+## [0.4.2] - 2022-12-29
 
 ### Added
 
@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Fixed unexpected data error when selecting some columns for some records
+
+## [0.4.1] - 2022-12-29
+
+### Added
+
+### Changed
+
+### Fixed
 
 ## [0.4.0] - 2022-12-17
 
