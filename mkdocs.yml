@@ -42,6 +42,13 @@ nav:
           - tutorials/synchronous/tuple-of-nested-models.md
       - Asynchronous API:
           - tutorials/asynchronous/models.md
+          - tutorials/asynchronous/insert.md
+          - tutorials/asynchronous/update.md
+          - tutorials/asynchronous/delete.md
+          - tutorials/asynchronous/select.md
+          - tutorials/asynchronous/nested-models.md
+          - tutorials/asynchronous/list-of-nested-models.md
+          - tutorials/asynchronous/tuple-of-nested-models.md
   - 'Explanation':
       - explanation/why-use-orms.md
   - reference.md
