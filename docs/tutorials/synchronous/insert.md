@@ -27,12 +27,13 @@ method
 To make the record added to redis temporary, add a `life_span_seconds` (Time To Live i.e. TTL) key-word argument 
 when calling the model's `insert` method.
 
-When the `life_span_seconds` argument is not specified, the `life_span_in_seconds` passed to the store during
-initialization is used.
+!!! info
+    When the `life_span_seconds` argument is not specified, the `life_span_in_seconds` passed to the store during
+    initialization is used.
+    
+    The `life_span_in_seconds` in both cases is `None` by default. This means records never expire by default.
 
-The `life_span_in_seconds` in both cases is `None` by default. This means records never expire by default.
-
-```Python hl_lines="20-23 13-15"
+```Python hl_lines="20-23"
 {!../docs_src/tutorials/synchronous/insert.py!}
 ```
 
@@ -41,8 +42,9 @@ The `life_span_in_seconds` in both cases is `None` by default. This means record
 To add many records to the redis instance, pass a list of that model's instances as first argument to the model's
 `insert` method.
 
-Adding many records at once is more performant than adding one record at a time repeatedly because less network requests
-are made in the former.
+!!! info
+    Adding many records at once is more performant than adding one record at a time repeatedly because less network requests
+    are made in the former.
 
 ```Python hl_lines="24-29"
 {!../docs_src/tutorials/synchronous/insert.py!}
@@ -53,19 +55,22 @@ are made in the former.
 To add temporary records to redis, add a `life_span_seconds` (Time To Live i.e. TTL) argument 
 when calling the model's `insert` method.
 
-When the `life_span_seconds` argument is not specified, the `life_span_in_seconds` passed to the store during
-initialization is used.
+!!! info
+    When the `life_span_seconds` argument is not specified, the `life_span_in_seconds` passed to the store during
+    initialization is used.
+    
+    The `life_span_in_seconds` in both cases is `None` by default. This means records never expire by default.
 
-The `life_span_in_seconds` in both cases is `None` by default. This means records never expire by default.
-
-```Python hl_lines="30-36 13-15"
+```Python hl_lines="30-36"
 {!../docs_src/tutorials/synchronous/insert.py!}
 ```
 
 ## Run the App
 
-Running the above code in a file `main.py` would produce
-(Probably [FLUSHALL](https://redis.io/commands/flushall/) redis first)::
+Running the above code in a file `main.py` would produce:
+
+!!! tip
+    Probably [FLUSHALL](https://redis.io/commands/flushall/) redis first
 
 <div class="termy">
 

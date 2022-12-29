@@ -28,7 +28,8 @@ Use standard Python types for all attributes.
 Set the `_primary_key_field` attribute to the name of the attribute
 that is to act as a unique identifier for each instance of the Model.
 
-In this case, there can be no two books with the same `title`.
+!!! example
+    In this case, there can be no two books with the same `title`.
 
 ```Python hl_lines="9"
 {!../docs_src/tutorials/synchronous/models.py!}
@@ -52,8 +53,9 @@ Then you can use the model class to:
 - `delete` from store
 - `select` from store
 
-The store is connected to the Redis instance, so any changes you make will
-reflect in redis itself.
+!!! info
+    The store is connected to the Redis instance, so any changes you make will
+    reflect in redis itself.
 
 ```Python hl_lines="28-39"
 {!../docs_src/tutorials/synchronous/models.py!}
@@ -61,8 +63,10 @@ reflect in redis itself.
 
 ## Run the App
 
-Running the above code in a file `main.py` would produce
-(Probably [FLUSHALL](https://redis.io/commands/flushall/) redis first)::
+Running the above code in a file `main.py` would produce:
+
+!!! tip
+    Probably [FLUSHALL](https://redis.io/commands/flushall/) redis first
 
 <div class="termy">
 

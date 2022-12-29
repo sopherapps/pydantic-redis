@@ -28,7 +28,8 @@ Use standard Python types for all attributes.
 Set the `_primary_key_field` attribute to the name of the attribute
 that is to act as a unique identifier for each instance of the Model.
 
-In this case, there can be no two authors with the same `name`.
+!!! example
+    In this case, there can be no two authors with the same `name`.
 
 ```Python hl_lines="9"
 {!../docs_src/tutorials/synchronous/nested-models.py!}
@@ -48,7 +49,8 @@ Use standard Python types for all attributes, as before.
 
 Annotate the field that is to hold the child model with the child class. 
 
-In this case, the field `author` is annotated with `Author` class.
+!!! example
+    In this case, the field `author` is annotated with `Author` class.
 
 ```Python hl_lines="17"
 {!../docs_src/tutorials/synchronous/nested-models.py!}
@@ -59,7 +61,8 @@ In this case, the field `author` is annotated with `Author` class.
 Set the `_primary_key_field` attribute to the name of the attribute
 that is to act as a unique identifier for each instance of the parent Model.
 
-In this case, there can be no two books with the same `title`.
+!!! example
+    In this case, there can be no two books with the same `title`.
 
 ```Python hl_lines="15"
 {!../docs_src/tutorials/synchronous/nested-models.py!}
@@ -83,10 +86,12 @@ Then you can use the parent model class to:
 - `delete` from store
 - `select` from store
 
-**Note: The child model will be automatically inserted, or updated if it already exists**
+!!! note
+    The child model will be automatically inserted, or updated if it already exists
 
-The store is connected to the Redis instance, so any changes you make will
-reflect in redis itself.
+!!! info
+    The store is connected to the Redis instance, so any changes you make will
+    reflect in redis itself.
 
 ```Python hl_lines="35-47"
 {!../docs_src/tutorials/synchronous/nested-models.py!}
@@ -96,8 +101,9 @@ reflect in redis itself.
 
 You can also use the child model independently.
 
-Any mutation on the child model will also be reflected in the any parent model instances 
-fetched from redis after that mutation.
+!!! info
+    Any mutation on the child model will also be reflected in the any parent model instances 
+    fetched from redis after that mutation.
 
 ```Python hl_lines="49-50"
 {!../docs_src/tutorials/synchronous/nested-models.py!}
@@ -109,8 +115,9 @@ A child model can be indirectly updated via the parent model.
 
 Set the attribute containing the child model with an instance of the child model
 
-The new instance of the child model should have the **SAME** primary key as the original
-child model.
+!!! note
+    The new instance of the child model should have the **SAME** primary key as the original
+    child model.
 
 ```Python hl_lines="52-56"
 {!../docs_src/tutorials/synchronous/nested-models.py!}
@@ -118,8 +125,10 @@ child model.
 
 ## Run the App
 
-Running the above code in a file `main.py` would produce 
-(Probably [FLUSHALL](https://redis.io/commands/flushall/) redis first):
+Running the above code in a file `main.py` would produce:
+
+!!! tip
+    Probably [FLUSHALL](https://redis.io/commands/flushall/) redis first
 
 <div class="termy">
 

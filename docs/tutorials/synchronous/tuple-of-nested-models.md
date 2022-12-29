@@ -29,7 +29,8 @@ Use standard Python types for all attributes.
 Set the `_primary_key_field` attribute to the name of the attribute
 that is to act as a unique identifier for each instance of the Model.
 
-In this case, there can be no two `Score`'s with the same `id`.
+!!! example
+    In this case, there can be no two `Score`'s with the same `id`.
 
 ```Python hl_lines="7"
 {!../docs_src/tutorials/synchronous/tuple-of-nested-models.py!}
@@ -49,9 +50,11 @@ Use standard Python types for all attributes, as before.
 
 Annotate the field that is to hold the tuple of child models with the Tuple of child class. 
 
-In this case, the field `scores` is annotated with `Tuple[str, Score]` class.
+!!! example
+    In this case, the field `scores` is annotated with `Tuple[str, Score]` class.
 
-The `str` is the player's name.
+!!! info
+    The `str` is the player's name.
 
 ```Python hl_lines="15"
 {!../docs_src/tutorials/synchronous/tuple-of-nested-models.py!}
@@ -62,7 +65,8 @@ The `str` is the player's name.
 Set the `_primary_key_field` attribute to the name of the attribute
 that is to act as a unique identifier for each instance of the parent Model.
 
-In this case, there can be no two `ScoreBoard`'s with the same `id`.
+!!! example
+    In this case, there can be no two `ScoreBoard`'s with the same `id`.
 
 ```Python hl_lines="13"
 {!../docs_src/tutorials/synchronous/tuple-of-nested-models.py!}
@@ -86,10 +90,12 @@ Then you can use the parent model class to:
 - `delete` from store
 - `select` from store
 
-**Note: The child models will be automatically inserted, or updated if they already exist**
+!!! info
+    The child models will be automatically inserted, or updated if they already exist
 
-The store is connected to the Redis instance, so any changes you make will
-reflect in redis itself.
+!!! info
+    The store is connected to the Redis instance, so any changes you make will
+    reflect in redis itself.
 
 ```Python hl_lines="25-35"
 {!../docs_src/tutorials/synchronous/tuple-of-nested-models.py!}
@@ -99,8 +105,9 @@ reflect in redis itself.
 
 You can also use the child model independently.
 
-Any mutation on the child model will also be reflected in the any parent model instances 
-fetched from redis after that mutation.
+!!! info
+    Any mutation on the child model will also be reflected in the any parent model instances 
+    fetched from redis after that mutation.
 
 ```Python hl_lines="37-38"
 {!../docs_src/tutorials/synchronous/tuple-of-nested-models.py!}
@@ -120,8 +127,10 @@ If there is any new instance of the child model that has a pre-existing primary 
 
 ## Run the App
 
-Running the above code in a file `main.py` would produce 
-(Probably [FLUSHALL](https://redis.io/commands/flushall/) redis first):
+Running the above code in a file `main.py` would produce:
+
+!!! tip
+    Probably [FLUSHALL](https://redis.io/commands/flushall/) redis first
 
 <div class="termy">
 
