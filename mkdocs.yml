@@ -33,6 +33,7 @@ nav:
       - tutorials/intro.md
       - Synchronous API:
           - tutorials/synchronous/models.md
+          - tutorials/synchronous/insert.md
           - tutorials/synchronous/nested-models.md
           - tutorials/synchronous/list-of-nested-models.md
           - tutorials/synchronous/tuple-of-nested-models.md
