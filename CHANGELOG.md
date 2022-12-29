@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2022-12-29
+
+### Added
+
+### Changed
+
+### Fixed
+
+- Fixed unexpected data error when selecting some columns for some records
+
 ## [0.4.0] - 2022-12-17
 
 ### Added
@@ -16,6 +26,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Changed redis index to use sorted sets instead of ordinary sets
+
+### Fixed
 
 ## [0.3.0] - 2022-12-15
 
