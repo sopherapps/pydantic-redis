@@ -60,6 +60,50 @@ People *love* thorough bug reports. I'm not even kidding.
 
 By contributing, you agree that your contributions will be licensed under its MIT License.
 
+## How to test
+
+- Clone the repo and enter its root folder
+
+  ```bash
+  git clone https://github.com/sopherapps/pydantic-redis.git && cd pydantic-redis
+  ```
+
+- Create a virtual environment and activate it
+
+  ```bash
+  virtualenv -p /usr/bin/python3.6 env && source env/bin/activate
+  ```
+
+- Install the dependencies
+
+  ```bash
+  pip install -r requirements.txt
+  ```
+
+- Run the pre-commit installation
+
+  ```bash
+  pre-commit install
+  ```
+
+- Run the tests command
+
+  ```bash
+  pytest --benchmark-disable
+  ```
+
+- Run benchmarks
+
+  ```bash
+  pytest --benchmark-compare --benchmark-autosave
+  ```
+
+- Or run to get benchmarks summary
+
+  ```shell
+  pytest test/test_benchmarks.py --benchmark-columns=mean,min,max --benchmark-name=short
+  ```
+
 ## References
 
 This document was adapted from [a gist by Brian A. Danielak](https://gist.github.com/briandk/3d2e8b3ec8daf5a27a62) which
