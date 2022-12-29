@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+- Exposed `RedisConfig` via `pydantic_redis.config`, especially for documentation.
+
 ### Fixed
 
 - Fixed docs building in CI
