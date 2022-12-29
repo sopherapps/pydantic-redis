@@ -36,6 +36,7 @@ nav:
           - tutorials/synchronous/insert.md
           - tutorials/synchronous/update.md
           - tutorials/synchronous/delete.md
+          - tutorials/synchronous/select.md
           - tutorials/synchronous/nested-models.md
           - tutorials/synchronous/list-of-nested-models.md
           - tutorials/synchronous/tuple-of-nested-models.md
