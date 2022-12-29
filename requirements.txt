@@ -11,3 +11,7 @@ black==22.8.0
 pre-commit
 build
 pytest-asyncio
+mkdocs
+mkdocstrings
+mkdocs-material
+mdx_include
