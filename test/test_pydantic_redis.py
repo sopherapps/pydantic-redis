@@ -1,6 +1,6 @@
 """Tests for the redis orm"""
 from collections import namedtuple
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 import pytest
 
@@ -234,21 +234,19 @@ def test_select_some_columns(store):
     Selecting some columns returns a list of dictionaries of all books models with only those columns
     """
     Book.insert(books)
-    books_dict = {book.title: book for book in books}
-    columns = ["title", "author", "in_stock"]
-    response = Book.select(columns=columns)
-    response_dict = {book["title"]: book for book in response}
+    columns = ["author", "in_stock", "published_on"]
 
-    for title, book in books_dict.items():
-        book_in_response = response_dict[title]
+    books_dict = {__make_key_for_book(book): book for book in books}
+    response = Book.select(columns=columns)
+    response_dict = {__make_key_for_book(book): book for book in response}
+
+    for k, book in books_dict.items():
+        book_in_response = response_dict[k]
         assert isinstance(book_in_response, dict)
         assert sorted(book_in_response.keys()) == sorted(columns)
 
         for column in columns:
-            if column == "author":
-                assert book_in_response[column] == getattr(book, column)
-            else:
-                assert f"{book_in_response[column]}" == f"{getattr(book, column)}"
+            assert f"{book_in_response[column]}" == f"{getattr(book, column)}"
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
@@ -258,7 +256,7 @@ def test_select_some_columns_paginated(store):
     skipping `skip` number of models and returning upto `limit` number of items
     """
     Book.insert(books)
-    columns = ["title", "author", "in_stock"]
+    columns = ["author", "in_stock", "published_on"]
 
     Record = namedtuple("Record", ["skip", "limit", "expected"])
     test_data = [
@@ -270,8 +268,8 @@ def test_select_some_columns_paginated(store):
     ]
     for record in test_data:
         response = Book.select(columns=columns, skip=record.skip, limit=record.limit)
-        response_dict = {book["title"]: book for book in response}
-        books_dict = {book.title: book for book in record.expected}
+        response_dict = {__make_key_for_book(book): book for book in response}
+        books_dict = {__make_key_for_book(book): book for book in record.expected}
         assert len(record.expected) == len(response_dict)
 
         for title, book in books_dict.items():
@@ -280,10 +278,7 @@ def test_select_some_columns_paginated(store):
             assert sorted(book_in_response.keys()) == sorted(columns)
 
             for column in columns:
-                if column == "author":
-                    assert book_in_response[column] == getattr(book, column)
-                else:
-                    assert f"{book_in_response[column]}" == f"{getattr(book, column)}"
+                assert f"{book_in_response[column]}" == f"{getattr(book, column)}"
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
@@ -295,6 +290,28 @@ def test_select_some_ids(store):
     ids = [book.title for book in books[:2]]
     response = Book.select(ids=ids)
     assert response == books[:2]
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_select_some_columns_for_some_ids(store):
+    """
+    Selecting some columns for some ids returns only dicts for the given ids with only the given columns
+    """
+    columns = ["author", "in_stock", "published_on"]
+    Book.insert(books)
+
+    ids = [book.title for book in books[:2]]
+    books_dict = {__make_key_for_book(book): book for book in books[:2]}
+    response = Book.select(ids=ids, columns=columns)
+    response_dict = {__make_key_for_book(book): book for book in response}
+
+    for k, book in books_dict.items():
+        book_in_response = response_dict[k]
+        assert isinstance(book_in_response, dict)
+        assert sorted(book_in_response.keys()) == sorted(columns)
+
+        for column in columns:
+            assert f"{book_in_response[column]}" == f"{getattr(book, column)}"
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
@@ -419,3 +436,17 @@ def __deserialize_book_data(raw_book_data: Dict[str, Any]) -> Book:
 
     data["author"] = Author.select(ids=[author_id])[0]
     return Book(**data)
+
+
+def __make_key_for_book(data: Union[Dict[str, Any], Book]):
+    """Makes a key from a book in case title is not provided"""
+    author_name = published_on = ""
+
+    if isinstance(data, dict):
+        author_name = data["author"].name
+        published_on = data["published_on"]
+    elif isinstance(data, Book):
+        author_name = data.author.name
+        published_on = data.published_on
+
+    return f"{author_name}-{published_on}"

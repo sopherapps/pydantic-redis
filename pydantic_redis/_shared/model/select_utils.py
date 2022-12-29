@@ -105,7 +105,7 @@ def select_some_fields_some_ids(
     keys = [f"{table_prefix}{key}" for key in ids]
     columns = get_select_fields(model=model, columns=fields)
     store = model.get_store()
-    return store.select_some_fields_for_all_ids_script(keys=keys, args=columns)
+    return store.select_some_fields_for_some_ids_script(keys=keys, args=columns)
 
 
 def parse_select_response(

@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [0.4.2] - 2022-12-20
+## [0.4.3] - 2022-12-29
 
 ### Added
+
+- Added mkdocs documentation
 
 ### Changed
 
@@ -17,15 +19,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Fixed docs building in CI
 
-## [0.4.1] - 2022-12-20
+## [0.4.2] - 2022-12-29
 
 ### Added
 
-- Added the docs site at `https://sopherapps.github.io/pydantic-redis/`
-
 ### Changed
 
-- Made the `shared` package protected
+### Fixed
+
+- Fixed unexpected data error when selecting some columns for some records
+
+## [0.4.1] - 2022-12-29
+
+### Added
+
+### Changed
 
 ### Fixed
 
