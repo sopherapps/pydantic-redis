@@ -63,7 +63,7 @@ jobs:
           python -m build
       - name: Deploy docs
         run: |
-          mkdocs gh-deploy -c
+          mkdocs gh-deploy --force
       - name: Upload to pypi
         run: |
           twine upload -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} dist/*
