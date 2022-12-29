@@ -1,8 +1,4 @@
-"""
-Pydantic-redis
-==============
-
-A simple declarative ORM for redis based on pydantic
+"""A simple declarative ORM for redis based on pydantic.
 
 Provides:
 
@@ -13,15 +9,6 @@ redis hashes
 to a redis instance
 4. A synchronous `syncio` and an asynchronous `asyncio` interface to the
 above classes
-
-Available subpackages
----------------------
-
-asyncio
-    Asynchronous API for the ORM
-
-syncio
-    Synchronous API for the ORM
 """
 
 from pydantic_redis.syncio import Store, Model, RedisConfig

@@ -1,4 +1,18 @@
-"""Module containing the lua scripts used in select queries"""
+"""Exposes the redis lua scripts to be used in select queries.
+
+Attributes:
+    SELECT_ALL_FIELDS_FOR_ALL_IDS_SCRIPT: the script for selecting all records from redis
+    PAGINATED_SELECT_ALL_FIELDS_FOR_ALL_IDS_SCRIPT: the script for selecting a slice of all records from redis,
+        given a `limit` maximum number of records to return and a `skip` number of records to skip.
+    SELECT_ALL_FIELDS_FOR_SOME_IDS_SCRIPT: the script for selecting some records from redis, given a bunch of `ids`
+    SELECT_SOME_FIELDS_FOR_ALL_IDS_SCRIPT: the script for selecting all records, but returning only a subset of
+        the fields in each record.
+    PAGINATED_SELECT_SOME_FIELDS_FOR_ALL_IDS_SCRIPT: the script for selecting a slice of all records from redis,
+        given a `limit` maximum number of records to return and a `skip` number of records to skip, but returning
+        only a subset of the fields in each record.
+    SELECT_SOME_FIELDS_FOR_SOME_IDS_SCRIPT: the script for selecting some records from redis, given a bunch of `ids`,
+        but returning only a subset of the fields in each record.
+"""
 
 SELECT_ALL_FIELDS_FOR_ALL_IDS_SCRIPT = """
 local s_find = string.find

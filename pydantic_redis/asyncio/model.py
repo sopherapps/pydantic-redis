@@ -1,4 +1,8 @@
-"""Module containing the model classes"""
+"""Exposes the Base `Model` class for creating custom asynchronous models.
+
+This module contains the `Model` class which should be inherited when
+creating model's for use in the asynchronous API of pydantic-redis.
+"""
 from typing import Optional, List, Any, Union, Dict
 
 from .._shared.model import AbstractModel
@@ -16,8 +20,11 @@ from .._shared.model.delete_utils import delete_on_pipeline
 
 
 class Model(AbstractModel):
-    """
-    The section in the store that saves rows of the same kind
+    """The Base class for all Asynchronous models.
+
+    Inherit this class when creating a new model.
+    The new model should have `_primary_key_field` defined.
+    Any interaction with redis is done through `Model`'s.
     """
 
     _store: Store
@@ -28,8 +35,18 @@ class Model(AbstractModel):
         data: Union[List[AbstractModel], AbstractModel],
         life_span_seconds: Optional[float] = None,
     ):
-        """
-        Inserts a given row or sets of rows into the table
+        """Inserts a given record or list of records into the redis.
+
+        Can add a single record or multiple records into redis.
+        The records must be instances of this class. i.e. a `Book`
+        model can only insert `Book` instances.
+
+        Args:
+            data: a model instance or list of model instances to put
+                into the redis store
+            life_span_seconds: the time-to-live in seconds of the records
+                to be inserted. If not specified, it defaults to the `Store`'s
+                life_span_seconds.
         """
         store = cls.get_store()
         life_span = (
@@ -61,8 +78,17 @@ class Model(AbstractModel):
     async def update(
         cls, _id: Any, data: Dict[str, Any], life_span_seconds: Optional[float] = None
     ):
-        """
-        Updates a given row or sets of rows in the table
+        """Updates the record whose primary key is `_id`.
+
+        Updates the record of this Model in redis whose primary key is equal to the `_id` provided.
+        The record is partially updated from the `data`.
+        If `life_span_seconds` is provided, it will also update the time-to-live of
+        the record.
+
+        Args:
+            _id: the primary key of record to be updated.
+            data: the new changes
+            life_span_seconds: the new time-to-live for the record
         """
         store = cls.get_store()
         life_span = (
@@ -84,8 +110,13 @@ class Model(AbstractModel):
 
     @classmethod
     async def delete(cls, ids: Union[Any, List[Any]]):
-        """
-        deletes a given row or sets of rows in the table
+        """Removes a list of this Model's records from redis
+
+        Removes all the records for the current Model whose primary keys
+        have been included in the `ids` passed.
+
+        Args:
+            ids: list of primary keys of the records to remove
         """
         store = cls.get_store()
 
@@ -101,17 +132,31 @@ class Model(AbstractModel):
         skip: int = 0,
         limit: Optional[int] = None,
         **kwargs,
-    ):
-        """
-        Selects given rows or sets of rows in the table
+    ) -> Union["Model", Dict[str, Any]]:
+        """etrieves records of this Model from redis.
 
+        Retrieves the records for this Model from redis.
 
-        However, if `limit` is set, the number of items
-        returned will be less or equal to `limit`.
-        `skip` defaults to 0. It is the number of items to skip.
-        `skip` is only relevant when limit is specified.
+        Args:
+            columns: the fields to return for each record
+            ids: the primary keys of the records to returns
+            skip: the number of records to skip. (default: 0)
+            limit: the maximum number of records to return
 
-        `skip` and `limit` are irrelevant when `ids` are provided.
+        Returns:
+            By default, it returns all records that belong to current Model.
+
+            If `ids` are specified, it returns only records whose primary keys
+            have been listed in `ids`.
+
+            If `skip` and `limit` are specified WITHOUT `ids`, a slice of
+            all records are returned.
+
+            If `limit` and `ids` are specified, `limit` is ignored.
+
+            If `columns` are specified, a list of dictionaries containing only
+            the fields specified in `columns` is returned. Otherwise, instances
+            of the current Model are returned.
         """
         if columns is None and ids is None:
             response = await select_all_fields_all_ids(

@@ -1,4 +1,6 @@
-"""Module containing the base model"""
+"""Exposes the Base `Model` common to both async and sync APIs
+
+"""
 import typing
 from typing import Dict, Tuple, Any, Type, Union, List, Optional
 
@@ -7,7 +9,7 @@ from pydantic import BaseModel
 from pydantic_redis._shared.utils import (
     typing_get_origin,
     typing_get_args,
-    from_any_to_str_or_bytes,
+    from_any_to_valid_redis_type,
     from_dict_to_key_value_list,
     from_bytes_to_str,
     from_str_or_bytes_to_any,
@@ -18,8 +20,23 @@ from ..store import AbstractStore
 
 
 class AbstractModel(BaseModel):
-    """
-    An abstract class to help with typings for Model class
+    """A base class for all Models, sync and async alike.
+
+    See the child classes for more.
+
+    Attributes:
+        _primary_key_field (str): the field that can uniquely identify each record
+            for the current Model
+        _field_types (Dict[str, Any]): a mapping of the fields and their types for
+            the current model
+        _store (AbstractStore): the Store in which the current model is registered.
+        _nested_model_tuple_fields (Dict[str, Tuple[Any, ...]]): a mapping of
+            fields and their types for fields that have tuples of nested models
+        _nested_model_list_fields (Dict[str, Type["AbstractModel"]]): a mapping of
+            fields and their associated nested models for fields that have
+            lists of nested models
+        _nested_model_fields (Dict[str, Type["AbstractModel"]]): a mapping of
+            fields and their associated nested models for fields that have nested models
     """
 
     _primary_key_field: str
@@ -34,37 +51,66 @@ class AbstractModel(BaseModel):
 
     @classmethod
     def get_store(cls) -> AbstractStore:
-        """Returns the instance of the store for this model"""
+        """Gets the Store in which the current model is registered.
+
+        Returns:
+             the instance of the store for this model
+        """
         return cls._store
 
     @classmethod
     def get_nested_model_tuple_fields(cls):
-        """Returns the fields that have tuples of nested models"""
+        """Gets the mapping for fields that have tuples of nested models.
+
+        Returns:
+             The mapping of field name and field type of a form similar to
+              `Tuple[str, Book, date]`
+        """
         return cls._nested_model_tuple_fields
 
     @classmethod
     def get_nested_model_list_fields(cls):
-        """Returns the fields that have list of nested models"""
+        """Gets the mapping for fields that have lists of nested models.
+
+        Returns:
+             The mapping of field name and model class nested in that field.
+        """
         return cls._nested_model_list_fields
 
     @classmethod
     def get_nested_model_fields(cls):
-        """Returns the fields that have nested models"""
+        """Gets the mapping for fields that have nested models.
+
+        Returns:
+             The mapping of field name and model class nested in that field.
+        """
         return cls._nested_model_fields
 
     @classmethod
     def get_primary_key_field(cls):
-        """Gets the protected _primary_key_field"""
+        """Gets the field that can uniquely identify each record of current Model
+
+        Returns:
+            the field that can be used to uniquely identify each record of current Model
+        """
         return cls._primary_key_field
 
     @classmethod
     def get_field_types(cls) -> Dict[str, Any]:
-        """Returns the fields types of this model"""
+        """Gets the mapping of field and field_type for current Model.
+
+        Returns:
+            the mapping of field and field_type for current Model
+        """
         return cls._field_types
 
     @classmethod
     def initialize(cls):
-        """Initializes class-wide variables for performance's reasons e.g. it caches the nested model fields"""
+        """Initializes class-wide variables for performance's reasons.
+
+        This is a performance hack that initializes an variables that are common
+        to all instances of the current Model e.g. the field types.
+        """
         cls._field_types = typing.get_type_hints(cls)
 
         cls._nested_model_list_fields = {}
@@ -112,21 +158,30 @@ class AbstractModel(BaseModel):
 
     @classmethod
     def serialize_partially(cls, data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        """Converts non primitive data types into str"""
-        return {key: from_any_to_str_or_bytes(value) for key, value in data.items()}
+        """Casts complex data types within a given dictionary to valid redis types.
+
+        Args:
+            data: the dictionary containing data with complex data types
+
+        Returns:
+            the transformed dictionary
+        """
+        return {key: from_any_to_valid_redis_type(value) for key, value in data.items()}
 
     @classmethod
     def deserialize_partially(
         cls, data: Union[List[Any], Dict[Any, Any]] = ()
     ) -> Dict[str, Any]:
-        """
-        Converts str or bytes to their expected data types, given a list of properties got from the
-        list of lists got after calling EVAL on redis.
+        """Casts str or bytes in a dict or flattened key-value list to expected data types.
 
-        EVAL returns a List of Lists of key, values where the value for a given key is in the position
-        just after the key e.g. [["foo", "bar", "head", 9]] => [{"foo": "bar", "head": 9}]
+        Converts str or bytes to their expected data types
 
-        Note: For backward compatibility, data can also be a dict.
+        Args:
+            data: flattened list of key-values or dictionary of data to cast.
+                Keeping it as potentially a dictionary ensures backward compatibility.
+
+        Returns:
+            the dictionary of properly parsed key-values.
         """
         if isinstance(data, dict):
             # for backward compatibility
@@ -144,38 +199,45 @@ class AbstractModel(BaseModel):
             value = from_str_or_bytes_to_any(value=data[i + 1], field_type=field_type)
 
             if key in nested_model_list_fields and value is not None:
-                value = deserialize_nested_model_list(
-                    field_type=nested_model_list_fields[key], value=value
-                )
+                value = _cast_lists(value, nested_model_list_fields[key])
 
             elif key in nested_model_tuple_fields and value is not None:
-                value = deserialize_nested_model_tuple(
-                    field_types=nested_model_tuple_fields[key], value=value
-                )
+                value = _cast_tuples(value, nested_model_tuple_fields[key])
 
             elif key in nested_model_fields and value is not None:
-                value = deserialize_nested_model(
-                    field_type=nested_model_fields[key], value=value
-                )
+                value = _cast_to_model(value=value, model=nested_model_fields[key])
 
             parsed_dict[key] = value
 
         return parsed_dict
 
 
-def deserialize_nested_model_list(
-    field_type: Type[AbstractModel], value: List[Any]
-) -> List[AbstractModel]:
-    """Deserializes a list of key values for the given field returning a list of nested models"""
-    return [field_type(**field_type.deserialize_partially(item)) for item in value]
+def _cast_lists(value: List[Any], _type: Type[AbstractModel]) -> List[AbstractModel]:
+    """Casts a list of flattened key-value lists into a list of _type.
+
+    Args:
+        _type: the type to cast the records to.
+        value: the value to convert
+
+    Returns:
+        a list of records of the given _type
+    """
+    return [_type(**_type.deserialize_partially(item)) for item in value]
 
 
-def deserialize_nested_model_tuple(
-    field_types: Tuple[Any, ...], value: List[Any]
-) -> Tuple[Any, ...]:
-    """Deserializes a list of key values for the given field returning a tuple of nested models among others"""
+def _cast_tuples(value: List[Any], _type: Tuple[Any, ...]) -> Tuple[Any, ...]:
+    """Casts a list of flattened key-value lists into a list of tuple of _type,.
+
+    Args:
+        _type: the tuple signature type to cast the records to
+            e.g. Tuple[str, Book, int]
+        value: the value to convert
+
+    Returns:
+        a list of records of tuple signature specified by `_type`
+    """
     items = []
-    for field_type, value in zip(field_types, value):
+    for field_type, value in zip(_type, value):
         if issubclass(field_type, AbstractModel) and value is not None:
             value = field_type(**field_type.deserialize_partially(value))
         items.append(value)
@@ -183,8 +245,14 @@ def deserialize_nested_model_tuple(
     return tuple(items)
 
 
-def deserialize_nested_model(
-    field_type: Type[AbstractModel], value: List[Any]
-) -> AbstractModel:
-    """Deserializes a list of key values for the given field returning the nested model"""
-    return field_type(**field_type.deserialize_partially(value))
+def _cast_to_model(value: List[Any], model: Type[AbstractModel]) -> AbstractModel:
+    """Converts a list of flattened key-value lists into a list of models,.
+
+    Args:
+        model: the model class to cast to
+        value: the value to cast
+
+    Returns:
+        a list of model instances of type `model`
+    """
+    return model(**model.deserialize_partially(value))
