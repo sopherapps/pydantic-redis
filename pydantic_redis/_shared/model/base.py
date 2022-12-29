@@ -108,7 +108,7 @@ class AbstractModel(BaseModel):
     def initialize(cls):
         """Initializes class-wide variables for performance's reasons.
 
-        This is a performance hack that initializes an variables that are common
+        This is a performance hack that initializes variables that are common
         to all instances of the current Model e.g. the field types.
         """
         cls._field_types = typing.get_type_hints(cls)

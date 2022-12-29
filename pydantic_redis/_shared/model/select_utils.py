@@ -152,6 +152,12 @@ def parse_select_response(
     and converts the list of flattened key-value lists into a list of models or dicts.
     e.g. [["foo", "bar", "head", 9]] => [{"foo": "bar", "head": 9}]
 
+    Args:
+        model: the model to which the items in `response` belong
+        response: the response from redis lua scripts that is to be cast.
+        as_models: the flag that determines whether to cast items as models
+            or as dicts.
+
     Returns:
         If `as_models` is true, list of models else list of dicts
     """

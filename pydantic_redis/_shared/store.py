@@ -1,4 +1,6 @@
-"""Module containing common base store functionality"""
+"""Exposes base Store class common to both sync and async
+
+"""
 from typing import Optional, Union, Type, Dict, Any
 
 from redis import Redis

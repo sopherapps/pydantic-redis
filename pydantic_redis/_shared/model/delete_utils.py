@@ -1,4 +1,6 @@
-"""Exposes shared utilities for deleting records from redis"""
+"""Exposes shared utilities for deleting records from redis
+
+"""
 from typing import Type, Union, List
 
 from redis.client import Pipeline
