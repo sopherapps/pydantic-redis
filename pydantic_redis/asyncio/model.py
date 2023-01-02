@@ -133,7 +133,7 @@ class Model(AbstractModel):
         limit: Optional[int] = None,
         **kwargs,
     ) -> Union["Model", Dict[str, Any]]:
-        """etrieves records of this Model from redis.
+        """Retrieves records of this Model from redis.
 
         Retrieves the records for this Model from redis.
 

@@ -70,7 +70,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Changed the `NESTED_MODEL_LIST_FIELD_PREFIX` to "___" and `NESTED_MODEL_TUPLE_FIELD_PREFIX` to "____"
+- Changed the `NESTED_MODEL_LIST_FIELD_PREFIX` to `___` and `NESTED_MODEL_TUPLE_FIELD_PREFIX` to `____`
 - Changed all queries (selects) to use lua scripts
 - Changed `Model.deserialize_partially` to receive data either as a dict or as a flattened list of key-values
 

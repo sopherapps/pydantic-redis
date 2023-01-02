@@ -9,6 +9,7 @@ redis hashes
 to a redis instance
 4. A synchronous `syncio` and an asynchronous `asyncio` interface to the
 above classes
+5. Parent-child relationships allowing for nesting models within models.
 """
 
 from pydantic_redis.syncio import Store, Model, RedisConfig
