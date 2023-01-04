@@ -1,4 +1,4 @@
-# Contributing to pydantic_redis
+# Contributing to pydantic-redis
 
 We love your input! We want to make contributing to this project as easy and transparent as possible, whether it's:
 
@@ -30,10 +30,10 @@ requests:
 In short, when you submit code changes, your submissions are understood to be under the
 same [MIT License](./LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
 
-## Report bugs using Github's [issues](https://github.com/sopherapps/pydantic_redis/issues)
+## Report bugs using Github's [issues](https://github.com/sopherapps/pydantic-redis/issues)
 
 We use GitHub issues to track public bugs. Report a bug
-by [opening a new issue](https://github.com/sopherapps/pydantic_redis/issues); it's that easy!
+by [opening a new issue](https://github.com/sopherapps/pydantic-redis/issues); it's that easy!
 
 ## Write bug reports with detail, background, and sample code
 
