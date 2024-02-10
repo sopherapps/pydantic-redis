@@ -83,7 +83,11 @@ def from_str_or_bytes_to_any(value: Any, field_type: Type) -> Any:
     """
     if isinstance(value, (bytes, bytearray, memoryview)):
         return orjson.loads(value)
-    elif isinstance(value, str) and field_type != str:
+    elif (
+        isinstance(value, str)
+        and field_type != str
+        and (str not in typing_get_args(field_type))
+    ):
         return orjson.loads(value)
     return value
 
