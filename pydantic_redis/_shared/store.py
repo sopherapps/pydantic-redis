@@ -3,9 +3,10 @@
 """
 from typing import Optional, Union, Type, Dict, Any
 
+from pydantic.fields import ModelPrivateAttr
 from redis import Redis
 from redis.asyncio import Redis as AioRedis
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from redis.commands.core import Script, AsyncScript
 
 from ..config import RedisConfig
@@ -45,10 +46,7 @@ class AbstractStore(BaseModel):
     ] = None
     select_some_fields_for_some_ids_script: Optional[Union[AsyncScript, Script]] = None
     models: Dict[str, Type["AbstractModel"]] = {}
-
-    class Config:
-        arbitrary_types_allowed = True
-        orm_mode = True
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
     def __init__(
         self,
@@ -122,7 +120,7 @@ class AbstractStore(BaseModel):
                 a certain type of records to be saved in redis.
         """
         if not isinstance(model_class.get_primary_key_field(), str):
-            raise NotImplementedError(
+            raise AttributeError(
                 f"{model_class.__name__} should have a _primary_key_field"
             )
 

@@ -2,7 +2,7 @@
 
 """
 import typing
-from typing import Any, Tuple, Optional, Union, Dict, Callable, Type, List
+from typing import Any, Tuple, Optional, Union, Dict, Type, List
 
 import orjson
 
@@ -63,15 +63,16 @@ def from_bytes_to_str(value: Union[str, bytes]) -> str:
     Returns:
         the string value of the argument passed
     """
-    if isinstance(value, bytes):
+    try:
         return str(value, "utf-8")
-    return value
+    except TypeError:
+        return value
 
 
 def from_str_or_bytes_to_any(value: Any, field_type: Type) -> Any:
     """Converts str or bytes to arbitrary data.
 
-    Converts the the `value` from a string or bytes to the `field_type`.
+    Converts the `value` from a string or bytes to the `field_type`.
 
     Args:
         value: the string or bytes to be transformed to the `field_type`
@@ -116,9 +117,10 @@ def default_json_dump(obj: Any):
     Returns:
         the bytes or string value of the object
     """
-    if hasattr(obj, "json") and isinstance(obj.json, Callable):
-        return obj.json()
-    return obj
+    try:
+        return obj.model_dump_json()
+    except AttributeError:
+        return obj
 
 
 def from_dict_to_key_value_list(data: Dict[str, Any]) -> List[Any]:

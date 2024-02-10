@@ -4,6 +4,7 @@ from typing import Dict, Any, Union
 
 import pytest
 
+from pydantic_redis import Store
 from pydantic_redis.config import RedisConfig  # noqa
 from pydantic_redis._shared.model.prop_utils import NESTED_MODEL_PREFIX  # noqa
 from pydantic_redis._shared.utils import strip_leading  # noqa
@@ -37,12 +38,12 @@ def test_register_model_without_primary_key(redis_store):
     class ModelWithoutPrimaryKey(Model):
         title: str
 
-    with pytest.raises(AttributeError, match=r"_primary_key_field"):
+    with pytest.raises(AttributeError, match=r"should have a _primary_key_field"):
         redis_store.register_model(ModelWithoutPrimaryKey)
 
     ModelWithoutPrimaryKey._primary_key_field = None
 
-    with pytest.raises(Exception, match=r"should have a _primary_key_field"):
+    with pytest.raises(AttributeError, match=r"should have a _primary_key_field"):
         redis_store.register_model(ModelWithoutPrimaryKey)
 
 
@@ -55,7 +56,7 @@ def test_store_model(redis_store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_bulk_insert(store):
+def test_bulk_insert(store: Store):
     """Providing a list of Model instances to the insert method inserts the records in redis"""
     book_keys = [f"book_%&_{book.title}" for book in books]
     keys = book_keys + [f"author_%&_{author.name}" for author in authors.values()]
@@ -78,7 +79,7 @@ def test_bulk_insert(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_bulk_nested_insert(store):
+def test_bulk_nested_insert(store: Store):
     """Providing a list of Model instances to the insert method also upserts their nested records in redis"""
     book_keys = [f"book_%&_{book.title}" for book in books]
     author_keys = [f"author_%&_{author.name}" for author in authors.values()]
@@ -103,7 +104,7 @@ def test_bulk_nested_insert(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_insert_single(store):
+def test_insert_single(store: Store):
     """
     Providing a single Model instance inserts that record in redis
     """
@@ -119,7 +120,7 @@ def test_insert_single(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_insert_single_nested(store):
+def test_insert_single_nested(store: Store):
     """
     Providing a single Model instance upserts also any nested model into redis
     """
@@ -135,7 +136,7 @@ def test_insert_single_nested(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_update_nested_list_of_models(store):
+def test_update_nested_list_of_models(store: Store):
     data = [Library(name="Babel Library", address="In a book", books=books)]
     Library.insert(data)
     # the list of nested models is automatically inserted
@@ -149,7 +150,7 @@ def test_update_nested_list_of_models(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_update_optional_nested_list_of_models(store):
+def test_update_optional_nested_list_of_models(store: Store):
     data = [Library(name="Babel Library", address="In a book", lost=books)]
     Library.insert(data)
     # the list of nested models is automatically inserted
@@ -163,7 +164,7 @@ def test_update_optional_nested_list_of_models(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_update_nested_tuple_of_models(store):
+def test_update_nested_tuple_of_models(store: Store):
     jane = authors["jane"]
     new_stuff = (books[0], jane, books[1], 8)
     data = [Library(name="Babel Library", address="In a book", new=new_stuff)]
@@ -183,7 +184,7 @@ def test_update_nested_tuple_of_models(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_update_optional_nested_tuple_of_models(store):
+def test_update_optional_nested_tuple_of_models(store: Store):
     popular_books = (books[0], books[2])
     data = [Library(name="Babel Library", address="In a book", popular=popular_books)]
     Library.insert(data)
@@ -198,7 +199,7 @@ def test_update_optional_nested_tuple_of_models(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_select_default(store):
+def test_select_default(store: Store):
     """Selecting without arguments returns all the book models"""
     Book.insert(books)
     response = Book.select()
@@ -208,7 +209,7 @@ def test_select_default(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_select_default_paginated(store):
+def test_select_default_paginated(store: Store):
     """
     Selecting without arguments returns the book models after
     skipping `skip` number of models and returning upto `limit` number of items
@@ -229,7 +230,7 @@ def test_select_default_paginated(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_select_some_columns(store):
+def test_select_some_columns(store: Store):
     """
     Selecting some columns returns a list of dictionaries of all books models with only those columns
     """
@@ -250,7 +251,7 @@ def test_select_some_columns(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_select_some_columns_paginated(store):
+def test_select_some_columns_paginated(store: Store):
     """
     Selecting some columns returns a list of dictionaries of all books models with only those columns
     skipping `skip` number of models and returning upto `limit` number of items
@@ -282,7 +283,7 @@ def test_select_some_columns_paginated(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_select_some_ids(store):
+def test_select_some_ids(store: Store):
     """
     Selecting some ids returns only those elements with the given ids
     """
@@ -293,7 +294,7 @@ def test_select_some_ids(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_select_some_columns_for_some_ids(store):
+def test_select_some_columns_for_some_ids(store: Store):
     """
     Selecting some columns for some ids returns only dicts for the given ids with only the given columns
     """
@@ -315,7 +316,7 @@ def test_select_some_columns_for_some_ids(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_update(store):
+def test_update(store: Store):
     """
     Updating an item of a given primary key updates it in redis
     """
@@ -344,14 +345,14 @@ def test_update(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_update_nested_model(store):
+def test_update_nested_model(store: Store):
     """
     Updating a nested model, without changing its primary key, also updates it its collection in redis
     """
     Book.insert(books)
 
     new_in_stock = not books[0].in_stock
-    updated_author = Author(**books[0].author.dict())
+    updated_author = Author(**books[0].author.model_dump())
     updated_author.active_years = (2020, 2045)
     book_key = f"book_%&_{books[0].title}"
     author_key = f"author_%&_{updated_author.name}"
@@ -380,7 +381,7 @@ def test_update_nested_model(store):
 
 
 @pytest.mark.parametrize("store", redis_store_fixture)
-def test_delete_multiple(store):
+def test_delete_multiple(store: Store):
     """
     Providing a list of ids to the delete function will remove the items from redis,
     but leave the nested models intact

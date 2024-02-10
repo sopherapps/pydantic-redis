@@ -50,10 +50,10 @@ class Library(syn.Model):
     _primary_key_field: str = "name"
     name: str
     address: str
-    books: List[Book] = None
+    books: List[Book] = []
     lost: Optional[List[Book]] = None
     popular: Optional[Tuple[Book, Book]] = None
-    new: Tuple[Book, Author, Book, int] = None
+    new: Optional[Tuple[Book, Author, Book, int]] = None
 
 
 class AsyncLibrary(asy.Model):
@@ -61,10 +61,10 @@ class AsyncLibrary(asy.Model):
     _primary_key_field: str = "name"
     name: str
     address: str
-    books: List[AsyncBook] = None
+    books: List[AsyncBook] = []
     lost: Optional[List[AsyncBook]] = None
     popular: Optional[Tuple[AsyncBook, AsyncBook]] = None
-    new: Tuple[AsyncBook, AsyncAuthor, AsyncBook, int] = None
+    new: Optional[Tuple[AsyncBook, AsyncAuthor, AsyncBook, int]] = None
 
 
 authors = {
@@ -113,7 +113,7 @@ books = [
 async_books = [
     AsyncBook(
         title="Oliver Twist",
-        author=authors["charles"],
+        author=async_authors["charles"],
         published_on=date(year=1215, month=4, day=4),
         in_stock=False,
         rating=2,
@@ -121,14 +121,14 @@ async_books = [
     ),
     AsyncBook(
         title="Great Expectations",
-        author=authors["charles"],
+        author=async_authors["charles"],
         published_on=date(year=1220, month=4, day=4),
         rating=5,
         tags=["Classic"],
     ),
     AsyncBook(
         title="Jane Eyre",
-        author=authors["charles"],
+        author=async_authors["charles"],
         published_on=date(year=1225, month=6, day=4),
         in_stock=False,
         rating=3.4,
@@ -136,7 +136,7 @@ async_books = [
     ),
     AsyncBook(
         title="Wuthering Heights",
-        author=authors["jane"],
+        author=async_authors["jane"],
         published_on=date(year=1600, month=4, day=4),
         rating=4.0,
         tags=["Classic", "Romance"],

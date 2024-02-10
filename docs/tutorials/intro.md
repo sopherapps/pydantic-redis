@@ -23,7 +23,7 @@ tutorial.
 
 ## Install Python
 
-Pydantic-redis requires python 3.6 and above. The latest stable python version is the recommended version.
+Pydantic-redis requires python 3.8 and above. The latest stable python version is the recommended version.
 
 You can install python from [the official python downloads site](https://www.python.org/downloads/).
 

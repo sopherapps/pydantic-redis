@@ -24,6 +24,8 @@ Most Notable Features are:
 
 ## Benchmarks
 
+### v0.**
+
 On an average PC ~16GB RAM, i7 Core
 
 ```
@@ -53,6 +55,37 @@ benchmark_single_insert[redis_store-book1]                   401.1377 (3.24)    
 benchmark_select_default[redis_store]                        498.4673 (4.03)     428.1350 (3.71)       769.7640 (2.92)   
 benchmark_bulk_insert[redis_store]                         1,025.0436 (8.29)     962.2230 (8.33)     1,200.3840 (4.56)   
 -------------------------------------------------------------------------------------------------------------------------
+```
+
+# v1.** (with pydantic v2)
+
+```
+------------------------------------------------- benchmark: 22 tests -------------------------------------------------
+Name (time in us)                                              Mean                 Min                   Max          
+-----------------------------------------------------------------------------------------------------------------------
+benchmark_delete[redis_store-Wuthering Heights]            124.1668 (1.0)      108.9610 (1.0)        418.1310 (1.04)   
+benchmark_bulk_delete[redis_store]                         137.7564 (1.11)     121.6380 (1.12)       470.7510 (1.17)   
+benchmark_select_columns_for_one_id[redis_store-book2]     166.7328 (1.34)     147.9490 (1.36)       430.3780 (1.07)   
+benchmark_select_columns_for_one_id[redis_store-book1]     171.0826 (1.38)     148.6430 (1.36)       426.0820 (1.06)   
+benchmark_select_columns_for_one_id[redis_store-book0]     171.7202 (1.38)     148.6460 (1.36)       431.3730 (1.07)   
+benchmark_select_columns_for_one_id[redis_store-book3]     172.1800 (1.39)     148.9410 (1.37)       471.5910 (1.17)   
+benchmark_select_all_for_one_id[redis_store-book1]         189.0068 (1.52)     163.5860 (1.50)       457.3090 (1.14)   
+benchmark_select_all_for_one_id[redis_store-book2]         188.5258 (1.52)     163.6650 (1.50)       401.7030 (1.0)    
+benchmark_select_all_for_one_id[redis_store-book3]         187.5434 (1.51)     165.3890 (1.52)       460.7100 (1.15)   
+benchmark_select_all_for_one_id[redis_store-book0]         190.3049 (1.53)     165.7280 (1.52)       459.8080 (1.14)   
+benchmark_select_columns_for_some_items[redis_store]       222.1405 (1.79)     198.9940 (1.83)       485.6230 (1.21)   
+benchmark_select_columns_paginated[redis_store]            229.5429 (1.85)     200.4560 (1.84)       494.4250 (1.23)   
+benchmark_select_default_paginated[redis_store]            262.3155 (2.11)     231.3960 (2.12)       568.8410 (1.42)   
+benchmark_select_some_items[redis_store]                   270.4251 (2.18)     232.3230 (2.13)       537.2130 (1.34)   
+benchmark_update[redis_store-Wuthering Heights-data0]      280.6308 (2.26)     248.7310 (2.28)       676.0330 (1.68)   
+benchmark_select_columns[redis_store]                      316.7642 (2.55)     283.6720 (2.60)       560.9610 (1.40)   
+benchmark_single_insert[redis_store-book2]                 343.9583 (2.77)     284.1000 (2.61)       585.6200 (1.46)   
+benchmark_single_insert[redis_store-book1]                 328.5308 (2.65)     291.8760 (2.68)       600.8130 (1.50)   
+benchmark_single_insert[redis_store-book3]                 341.0249 (2.75)     292.2800 (2.68)       575.1020 (1.43)   
+benchmark_single_insert[redis_store-book0]                 349.9540 (2.82)     299.6660 (2.75)       606.0370 (1.51)   
+benchmark_select_default[redis_store]                      381.0231 (3.07)     346.2910 (3.18)       669.7460 (1.67)   
+benchmark_bulk_insert[redis_store]                         840.4876 (6.77)     790.2340 (7.25)     1,049.8260 (2.61)   
+-----------------------------------------------------------------------------------------------------------------------
 ```
 
 ## Contributions
