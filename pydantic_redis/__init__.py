@@ -17,4 +17,4 @@ import pydantic_redis.asyncio
 
 __all__ = [Store, RedisConfig, Model, asyncio]
 
-__version__ = "0.4.3"
+__version__ = "0.5.0"

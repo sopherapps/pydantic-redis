@@ -12,6 +12,6 @@ pre-commit
 build
 pytest-asyncio
 mkdocs
-mkdocstrings
+mkdocstrings[python]>=0.18
 mkdocs-material
 mdx_include

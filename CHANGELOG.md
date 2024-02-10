@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Fixed orjson.JSONDecodeError when models have optional string fields
+- Fixed ModuleNotFoundError: No module named 'mkdocstrings_handlers'
 
 ## [0.4.3] - 2022-12-29
 
