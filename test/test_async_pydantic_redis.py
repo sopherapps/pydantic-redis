@@ -6,7 +6,7 @@ import pytest
 
 from pydantic_redis._shared.model.prop_utils import NESTED_MODEL_PREFIX  # noqa
 from pydantic_redis._shared.utils import strip_leading  # noqa
-from pydantic_redis.asyncio import Model, RedisConfig
+from pydantic_redis.asyncio import Model, RedisConfig, Store
 from test.conftest import (
     async_redis_store_fixture,
     AsyncBook,
@@ -36,12 +36,12 @@ def test_register_model_without_primary_key(async_redis_store):
     class ModelWithoutPrimaryKey(Model):
         title: str
 
-    with pytest.raises(AttributeError, match=r"_primary_key_field"):
+    with pytest.raises(AttributeError, match=r"should have a _primary_key_field"):
         async_redis_store.register_model(ModelWithoutPrimaryKey)
 
     ModelWithoutPrimaryKey._primary_key_field = None
 
-    with pytest.raises(Exception, match=r"should have a _primary_key_field"):
+    with pytest.raises(AttributeError, match=r"should have a _primary_key_field"):
         async_redis_store.register_model(ModelWithoutPrimaryKey)
 
 
@@ -55,7 +55,7 @@ def test_store_model(async_redis_store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_bulk_insert(store):
+async def test_bulk_insert(store: Store):
     """Providing a list of Model instances to the insert method inserts the records in redis"""
     book_keys = [f"asyncbook_%&_{book.title}" for book in async_books]
     keys = book_keys + [
@@ -82,7 +82,7 @@ async def test_bulk_insert(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_bulk_nested_insert(store):
+async def test_bulk_nested_insert(store: Store):
     """Providing a list of Model instances to the insert method also upserts their nested records in redis"""
     book_keys = [f"asyncbook_%&_{book.title}" for book in async_books]
     author_keys = [f"asyncauthor_%&_{author.name}" for author in async_authors.values()]
@@ -111,7 +111,7 @@ async def test_bulk_nested_insert(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_insert_single(store):
+async def test_insert_single(store: Store):
     """
     Providing a single Model instance inserts that record in redis
     """
@@ -128,7 +128,7 @@ async def test_insert_single(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_insert_single_nested(store):
+async def test_insert_single_nested(store: Store):
     """
     Providing a single Model instance upserts also any nested model into redis
     """
@@ -145,7 +145,7 @@ async def test_insert_single_nested(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_update_nested_list_of_models(store):
+async def test_update_nested_list_of_models(store: Store):
     data = [
         AsyncLibrary(name="Babel AsyncLibrary", address="In a book", books=async_books)
     ]
@@ -162,7 +162,7 @@ async def test_update_nested_list_of_models(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_update_optional_nested_list_of_models(store):
+async def test_update_optional_nested_list_of_models(store: Store):
     data = [
         AsyncLibrary(name="Babel AsyncLibrary", address="In a book", lost=async_books)
     ]
@@ -179,7 +179,7 @@ async def test_update_optional_nested_list_of_models(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_update_nested_tuple_of_models(store):
+async def test_update_nested_tuple_of_models(store: Store):
     jane = async_authors["jane"]
     new_stuff = (async_books[0], jane, async_books[1], 8)
     data = [AsyncLibrary(name="Babel AsyncLibrary", address="In a book", new=new_stuff)]
@@ -200,7 +200,7 @@ async def test_update_nested_tuple_of_models(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_update_optional_nested_tuple_of_models(store):
+async def test_update_optional_nested_tuple_of_models(store: Store):
     popular_async_books = (async_books[0], async_books[2])
     data = [
         AsyncLibrary(
@@ -220,7 +220,7 @@ async def test_update_optional_nested_tuple_of_models(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_select_default(store):
+async def test_select_default(store: Store):
     """Selecting without arguments returns all the book models"""
     await AsyncBook.insert(async_books)
     response = await AsyncBook.select()
@@ -231,7 +231,7 @@ async def test_select_default(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_select_default_paginated(store):
+async def test_select_default_paginated(store: Store):
     """
     Selecting without arguments returns the book models after
     skipping `skip` number of models and returning upto `limit` number of items
@@ -253,7 +253,7 @@ async def test_select_default_paginated(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_select_some_columns(store):
+async def test_select_some_columns(store: Store):
     """
     Selecting some columns returns a list of dictionaries of all async_books models with only those columns
     """
@@ -277,7 +277,7 @@ async def test_select_some_columns(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_select_some_columns_paginated(store):
+async def test_select_some_columns_paginated(store: Store):
     """
     Selecting some columns returns a list of dictionaries of all books models with only those columns
     skipping `skip` number of models and returning upto `limit` number of items
@@ -315,7 +315,7 @@ async def test_select_some_columns_paginated(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_select_some_ids(store):
+async def test_select_some_ids(store: Store):
     """
     Selecting some ids returns only those elements with the given ids
     """
@@ -327,7 +327,7 @@ async def test_select_some_ids(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_update(store):
+async def test_update(store: Store):
     """
     Updating an item of a given primary key updates it in redis
     """
@@ -359,14 +359,14 @@ async def test_update(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_update_nested_model(store):
+async def test_update_nested_model(store: Store):
     """
     Updating a nested model, without changing its primary key, also updates it its collection in redis
     """
     await AsyncBook.insert(async_books)
 
     new_in_stock = not async_books[0].in_stock
-    updated_author = AsyncAuthor(**async_books[0].author.dict())
+    updated_author = AsyncAuthor(**async_books[0].author.model_dump())
     updated_author.active_years = (2020, 2045)
     book_key = f"asyncbook_%&_{async_books[0].title}"
     author_key = f"asyncauthor_%&_{updated_author.name}"
@@ -397,7 +397,7 @@ async def test_update_nested_model(store):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("store", async_redis_store_fixture)
-async def test_delete_multiple(store):
+async def test_delete_multiple(store: Store):
     """
     Providing a list of ids to the delete function will remove the items from redis,
     but leave the nested models intact

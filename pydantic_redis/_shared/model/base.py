@@ -4,7 +4,8 @@
 import typing
 from typing import Dict, Tuple, Any, Type, Union, List, Optional
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
+from pydantic.fields import ModelPrivateAttr
 
 from pydantic_redis._shared.utils import (
     typing_get_origin,
@@ -45,9 +46,7 @@ class AbstractModel(BaseModel):
     _nested_model_tuple_fields: Dict[str, Tuple[Any, ...]] = {}
     _nested_model_list_fields: Dict[str, Type["AbstractModel"]] = {}
     _nested_model_fields: Dict[str, Type["AbstractModel"]] = {}
-
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @classmethod
     def get_store(cls) -> AbstractStore:
@@ -93,7 +92,10 @@ class AbstractModel(BaseModel):
         Returns:
             the field that can be used to uniquely identify each record of current Model
         """
-        return cls._primary_key_field
+        try:
+            return cls._primary_key_field.get_default()
+        except AttributeError:
+            return cls._primary_key_field
 
     @classmethod
     def get_field_types(cls) -> Dict[str, Any]:

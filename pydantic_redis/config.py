@@ -2,7 +2,7 @@
 """
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class RedisConfig(BaseModel):
@@ -24,6 +24,8 @@ class RedisConfig(BaseModel):
             (default: utf-8)
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     host: str = "localhost"
     port: int = 6379
     db: int = 0
@@ -38,6 +40,3 @@ class RedisConfig(BaseModel):
         if self.password is None:
             return f"{proto}://{self.host}:{self.port}/{self.db}"
         return f"{proto}://:{self.password}@{self.host}:{self.port}/{self.db}"
-
-    class Config:
-        orm_mode = True

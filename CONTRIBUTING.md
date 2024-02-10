@@ -71,7 +71,7 @@ By contributing, you agree that your contributions will be licensed under its MI
 - Create a virtual environment and activate it
 
   ```bash
-  virtualenv -p /usr/bin/python3.6 env && source env/bin/activate
+  virtualenv -p /usr/bin/python3.8 env && source env/bin/activate
   ```
 
 - Install the dependencies

@@ -180,3 +180,6 @@ class Model(AbstractModel):
         return parse_select_response(
             model=cls, response=response, as_models=(columns is None)
         )
+
+
+Store.model_rebuild()
