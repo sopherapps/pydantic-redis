@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2024-02-10
+
+### Added
+
+### Changed
+
+- Upgraded to pydantic v2.
+
+### Fixed
+
+- Fixed orjson.JSONDecodeError when models have optional string fields
+
 ## [0.4.3] - 2022-12-29
 
 ### Added
