@@ -17,12 +17,14 @@ class Author(syn.Model):
     _primary_key_field: str = "name"
     name: str
     active_years: Tuple[int, int]
+    genre: Optional[str] = None
 
 
 class AsyncAuthor(asy.Model):
     _primary_key_field: str = "name"
     name: str
     active_years: Tuple[int, int]
+    genre: Optional[str] = None
 
 
 class Book(syn.Model):
@@ -69,12 +71,12 @@ class AsyncLibrary(asy.Model):
 
 authors = {
     "charles": Author(name="Charles Dickens", active_years=(1220, 1280)),
-    "jane": Author(name="Jane Austen", active_years=(1580, 1640)),
+    "jane": Author(name="Jane Austen", active_years=(1580, 1640), genre="romance"),
 }
 
 async_authors = {
     "charles": AsyncAuthor(name="Charles Dickens", active_years=(1220, 1280)),
-    "jane": AsyncAuthor(name="Jane Austen", active_years=(1580, 1640)),
+    "jane": AsyncAuthor(name="Jane Austen", active_years=(1580, 1640), genre="romance"),
 }
 
 books = [

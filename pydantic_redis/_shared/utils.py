@@ -82,10 +82,21 @@ def from_str_or_bytes_to_any(value: Any, field_type: Type) -> Any:
         the `field_type` version of the `value`.
     """
     if isinstance(value, (bytes, bytearray, memoryview)):
+        # bytearray-like objects should always be JSON-parsed
         return orjson.loads(value)
-    elif isinstance(value, str) and field_type != str:
-        return orjson.loads(value)
-    return value
+
+    elif field_type == Optional[str] and value != "null":
+        # optional strings have 'null' when None
+        return value
+
+    elif field_type == str:
+        return value
+
+    elif not isinstance(value, str):
+        return value
+
+    # JSON parse all other values that are str
+    return orjson.loads(value)
 
 
 def from_any_to_valid_redis_type(value: Any) -> Union[str, bytes, List[Any]]:
