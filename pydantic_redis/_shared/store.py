@@ -6,7 +6,7 @@ from typing import Optional, Union, Type, Dict, Any
 from pydantic.fields import ModelPrivateAttr
 from redis import Redis
 from redis.asyncio import Redis as AioRedis
-from pydantic import ConfigDict, BaseModel
+from pydantic import ConfigDict, BaseModel, model_validator
 from redis.commands.core import Script, AsyncScript
 
 from ..config import RedisConfig
@@ -32,7 +32,7 @@ class AbstractStore(BaseModel):
     """
 
     name: str
-    redis_config: RedisConfig
+    redis_config: Optional[RedisConfig] = None
     redis_store: Optional[Union[Redis, AioRedis]] = None
     life_span_in_seconds: Optional[int] = None
     select_all_fields_for_all_ids_script: Optional[Union[AsyncScript, Script]] = None
@@ -51,7 +51,7 @@ class AbstractStore(BaseModel):
     def __init__(
         self,
         name: str,
-        redis_config: RedisConfig,
+        redis_config: Optional[RedisConfig] = None,
         redis_store: Optional[Union[Redis, AioRedis]] = None,
         life_span_in_seconds: Optional[int] = None,
         **data: Any,
@@ -64,8 +64,17 @@ class AbstractStore(BaseModel):
             **data,
         )
 
-        self.redis_store = self._connect_to_redis()
+        # because of validator we can safely assume either `redis_store` is passed or `redis_config`
+        if self.redis_store is None:
+            self.redis_store = self._connect_to_redis()
         self._register_lua_scripts()
+
+    @model_validator(mode='after')
+    def _config_or_redis(self):
+        if (self.redis_config is None) and (self.redis_store is None):
+            raise ValueError("Must provide one of redis_config or redis_store")
+        if (self.redis_config is not None) and (self.redis_store is not None):
+            raise ValueError("Cannot provide both redis_config and redis_store")
 
     def _connect_to_redis(self) -> Union[Redis, AioRedis]:
         """Connects the store to redis.
