@@ -1,4 +1,5 @@
 """Tests for the redis orm"""
+
 from collections import namedtuple
 from typing import Dict, Any, Union
 

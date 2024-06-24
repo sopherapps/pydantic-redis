@@ -1,6 +1,7 @@
 """Exposes base Store class common to both sync and async
 
 """
+
 from typing import Optional, Union, Type, Dict, Any
 
 from pydantic.fields import ModelPrivateAttr

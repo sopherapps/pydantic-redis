@@ -1,6 +1,7 @@
 """Exposes the utility functions for inserting records into redis.
 
 """
+
 from datetime import datetime
 from typing import Union, Optional, Any, Dict, Tuple, List, Type
 
@@ -145,15 +146,17 @@ def _serialize_tuple(
     try:
         field_types = tuple_fields.get(key, ())
         value = [
-            insert_on_pipeline(
-                model=field_type,
-                _id=None,
-                pipeline=pipeline,
-                record=item,
-                life_span=life_span,
+            (
+                insert_on_pipeline(
+                    model=field_type,
+                    _id=None,
+                    pipeline=pipeline,
+                    record=item,
+                    life_span=life_span,
+                )
+                if issubclass(field_type, AbstractModel)
+                else item
             )
-            if issubclass(field_type, AbstractModel)
-            else item
             for field_type, item in zip(field_types, value)
         ]
         key = f"{NESTED_MODEL_TUPLE_FIELD_PREFIX}{key}"

@@ -1,6 +1,7 @@
 """Exposes the Base `Model` common to both async and sync APIs
 
 """
+
 import typing
 from typing import Dict, Tuple, Any, Type, Union, List, Optional
 

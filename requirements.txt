@@ -7,7 +7,7 @@ pytest-lazy-fixture==0.6.3
 redis==4.5.4
 redislite
 twine==3.8.0
-black==22.8.0
+black==24.3.0
 pre-commit
 build
 pytest-asyncio
