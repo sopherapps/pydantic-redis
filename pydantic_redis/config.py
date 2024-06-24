@@ -1,5 +1,6 @@
 """Exposes the configuration for connecting to a redis database.
 """
+
 from typing import Optional
 
 from pydantic import ConfigDict, BaseModel

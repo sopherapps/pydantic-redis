@@ -1,6 +1,7 @@
 """Exposes utilities for selecting records from redis using lua scripts.
 
 """
+
 from typing import List, Any, Type, Union, Awaitable, Optional
 
 from pydantic_redis._shared.model.prop_utils import (

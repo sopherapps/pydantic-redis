@@ -1,4 +1,5 @@
 """Tests for benchmarks"""
+
 import pytest
 
 from test.conftest import (

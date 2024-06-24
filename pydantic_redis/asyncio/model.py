@@ -3,6 +3,7 @@
 This module contains the `Model` class which should be inherited when
 creating model's for use in the asynchronous API of pydantic-redis.
 """
+
 from typing import Optional, List, Any, Union, Dict
 
 from .._shared.model import AbstractModel

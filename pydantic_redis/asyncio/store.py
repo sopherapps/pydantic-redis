@@ -8,6 +8,7 @@ have a different image of the actual data in redis.
 A model must be registered with a store before it can interact with
 a redis database.
 """
+
 from typing import Dict, Type, TYPE_CHECKING
 
 from redis import asyncio as redis
