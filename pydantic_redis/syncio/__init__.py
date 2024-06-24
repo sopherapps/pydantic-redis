@@ -27,4 +27,4 @@ from .model import Model
 from .store import Store
 from ..config import RedisConfig
 
-__all__ = [Model, Store, RedisConfig]
+__all__ = ["Model", "Store", "RedisConfig"]
