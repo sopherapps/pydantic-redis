@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+- [BREAKING CHANGE] Removed the 'redis_store' argument from the `Store` constructor
+- [BREAKING CHANGE] Made the 'redis_store' property of the `Store` readonly
+
+### Fixed
+
+- Fixed the rendering of the reference docs from the docstrings
+
 ## [0.5.0] - 2024-02-10
 
 ### Added
