@@ -34,7 +34,6 @@ class AbstractStore(BaseModel):
 
     name: str
     redis_config: RedisConfig
-    redis_store: Optional[Union[Redis, AioRedis]] = None
     life_span_in_seconds: Optional[int] = None
     select_all_fields_for_all_ids_script: Optional[Union[AsyncScript, Script]] = None
     paginated_select_all_fields_for_all_ids_script: Optional[
@@ -49,24 +48,30 @@ class AbstractStore(BaseModel):
     models: Dict[str, Type["AbstractModel"]] = {}
     model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
+    # protected properties
+    _redis_store: Optional[Union[Redis, AioRedis]] = None
+
     def __init__(
         self,
         name: str,
         redis_config: RedisConfig,
-        redis_store: Optional[Union[Redis, AioRedis]] = None,
         life_span_in_seconds: Optional[int] = None,
         **data: Any,
     ):
         super().__init__(
             name=name,
             redis_config=redis_config,
-            redis_store=redis_store,
             life_span_in_seconds=life_span_in_seconds,
             **data,
         )
 
-        self.redis_store = self._connect_to_redis()
+        self._redis_store = self._connect_to_redis()
         self._register_lua_scripts()
+
+    @property
+    def redis_store(self) -> Optional[Union[Redis, AioRedis]]:
+        """the redis store for the given store"""
+        return self._redis_store
 
     def _connect_to_redis(self) -> Union[Redis, AioRedis]:
         """Connects the store to redis.
