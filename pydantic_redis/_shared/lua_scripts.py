@@ -39,13 +39,18 @@ local function get_obj(id)
     for i, k in ipairs(value) do
         if not (i % 2 == 0) then
             if startswith(k, '___') or startswith(k, '____') then
-                local nested = {}
-
-                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
-                    table_insert(nested, get_obj(v))
+                if value[i + 1] == 'null' then
+                    value[i + 1] = 'null'
+                else
+                    local nested = {}
+    
+                    for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                        table_insert(nested, get_obj(v))
+                    end
+    
+                    value[i + 1] = nested
                 end
-
-                value[i + 1] = nested
+                
                 value[i] = trim_dunder(k)
             elseif startswith(k, '__') then
                 value[i + 1] = get_obj(value[i + 1])
@@ -95,13 +100,18 @@ local function get_obj(id)
     for i, k in ipairs(value) do
         if not (i % 2 == 0) then
             if startswith(k, '___') or startswith(k, '____') then
-                local nested = {}
-
-                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
-                    table_insert(nested, get_obj(v))
+                if value[i + 1] == 'null' then
+                    value[i + 1] = 'null'
+                else
+                    local nested = {}
+    
+                    for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                        table_insert(nested, get_obj(v))
+                    end
+    
+                    value[i + 1] = nested
                 end
-
-                value[i + 1] = nested
+                
                 value[i] = trim_dunder(k)
             elseif startswith(k, '__') then
                 value[i + 1] = get_obj(value[i + 1])
@@ -158,13 +168,18 @@ local function get_obj(id)
     for i, k in ipairs(value) do
         if not (i % 2 == 0) then
             if startswith(k, '___') or startswith(k, '____') then
-                local nested = {}
-
-                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
-                    table_insert(nested, get_obj(v))
+                if value[i + 1] == 'null' then
+                    value[i + 1] = 'null'
+                else
+                    local nested = {}
+    
+                    for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                        table_insert(nested, get_obj(v))
+                    end
+    
+                    value[i + 1] = nested
                 end
-
-                value[i + 1] = nested
+                
                 value[i] = trim_dunder(k)
             elseif startswith(k, '__') then
                 value[i + 1] = get_obj(value[i + 1])
@@ -217,13 +232,17 @@ local function get_obj(id)
     for i, k in ipairs(value) do
         if not (i % 2 == 0) then
             if startswith(k, '___') or startswith(k, '____') then
-                local nested = {}
-
-                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
-                    table_insert(nested, get_obj(v))
+                if value[i + 1] == 'null' then
+                    value[i + 1] = 'null'
+                else
+                    local nested = {}
+    
+                    for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                        table_insert(nested, get_obj(v))
+                    end
+    
+                    value[i + 1] = nested
                 end
-
-                value[i + 1] = nested
                 value[i] = trim_dunder(k)
             elseif startswith(k, '__') then
                 value[i + 1] = get_obj(value[i + 1])
@@ -288,13 +307,18 @@ local function get_obj(id)
     for i, k in ipairs(value) do
         if not (i % 2 == 0) then
             if startswith(k, '___') or startswith(k, '____') then
-                local nested = {}
-
-                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
-                    table_insert(nested, get_obj(v))
+                if value[i + 1] == 'null' then
+                    value[i + 1] = 'null'
+                else
+                    local nested = {}
+    
+                    for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                        table_insert(nested, get_obj(v))
+                    end
+    
+                    value[i + 1] = nested
                 end
-
-                value[i + 1] = nested
+                
                 value[i] = trim_dunder(k)
             elseif startswith(k, '__') then
                 value[i + 1] = get_obj(value[i + 1])
@@ -367,13 +391,18 @@ local function get_obj(id)
     for i, k in ipairs(value) do
         if not (i % 2 == 0) then
             if startswith(k, '___') or startswith(k, '____') then
-                local nested = {}
-
-                for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
-                    table_insert(nested, get_obj(v))
+                if value[i + 1] == 'null' then
+                    value[i + 1] = 'null'
+                else
+                    local nested = {}
+    
+                    for v in s_gmatch(value[i + 1], '([^%[^,^%]^\"]+)') do
+                        table_insert(nested, get_obj(v))
+                    end
+    
+                    value[i + 1] = nested
                 end
-
-                value[i + 1] = nested
+                
                 value[i] = trim_dunder(k)
             elseif startswith(k, '__') then
                 value[i + 1] = get_obj(value[i + 1])

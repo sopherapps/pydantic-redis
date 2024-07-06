@@ -1,12 +1,17 @@
 """Exposes the Base `Model` common to both async and sync APIs
 
+Attributes:
+    NESTED_MODEL_PREFIX (str): the prefix for fields with single nested models
+    NESTED_MODEL_LIST_FIELD_PREFIX (str): the prefix for fields with lists of nested models
+    NESTED_MODEL_TUPLE_FIELD_PREFIX (str): the prefix for fields with tuples of nested models
+    NESTED_MODEL_DICT_FIELD_PREFIX (str): the prefix for fields with dicts of nested models
 """
 
+import enum
 import typing
 from typing import Dict, Tuple, Any, Type, Union, List, Optional
 
 from pydantic import ConfigDict, BaseModel
-from pydantic.fields import ModelPrivateAttr
 
 from pydantic_redis._shared.utils import (
     typing_get_origin,
@@ -20,6 +25,34 @@ from pydantic_redis._shared.utils import (
 
 from ..store import AbstractStore
 
+NESTED_MODEL_PREFIX = "__"
+NESTED_MODEL_LIST_FIELD_PREFIX = "___"
+NESTED_MODEL_TUPLE_FIELD_PREFIX = "____"
+NESTED_MODEL_DICT_FIELD_PREFIX = "_____"
+
+
+class NestingType(int, enum.Enum):
+    """The type of nesting that can happen especially for nested models"""
+
+    ON_ROOT = 0
+    IN_LIST = 1
+    IN_TUPLE = 2
+    IN_DICT = 3
+    IN_UNION = 4
+
+
+# the type describing a tree for traversing types that form an aggregate type with a possibility
+#   of nested types and models
+#   Note: AbstractModel types are treated special. The first item in the tuple declares if
+#         the type on that tree node has a nested model, and of which type of nesting
+#
+#   Note: (None, (Any)) corresponds to a type that is not a nested model
+#         (IN_LIST, (AbstractModel)) corresponds to List[AbstractModel]
+#         (None, (str)) corresponds to str
+#         (IN_TUPLE, (str, AbstractModel)) corresponds to Tuple[str, AbstractModel]
+#         (IN_LIST, (IN_TUPLE, (str, AbstractModel))) corresponds to List[Tuple[str, AbstractModel]]
+AggTypeTree = Tuple[Optional[NestingType], Tuple[Union[Type["AbstractModel"], Any], ...]]  # type: ignore
+
 
 class AbstractModel(BaseModel):
     """A base class for all Models, sync and async alike.
@@ -32,21 +65,18 @@ class AbstractModel(BaseModel):
         _field_types (Dict[str, Any]): a mapping of the fields and their types for
             the current model
         _store (AbstractStore): the Store in which the current model is registered.
-        _nested_model_tuple_fields (Dict[str, Tuple[Any, ...]]): a mapping of
-            fields and their types for fields that have tuples of nested models
-        _nested_model_list_fields (Dict[str, Type["AbstractModel"]]): a mapping of
-            fields and their associated nested models for fields that have
-            lists of nested models
-        _nested_model_fields (Dict[str, Type["AbstractModel"]]): a mapping of
-            fields and their associated nested models for fields that have nested models
+        _field_type_trees (Dict[str, Optional[AggTypeTree]]): a mapping of
+            fields and their associated trees of types forming their aggregate types
+        _strict (bool): Whether the model should be very strict on its types. By default, a
+            moderate level of strictness is imposed
     """
 
     _primary_key_field: str
     _field_types: Dict[str, Any] = {}
     _store: AbstractStore
-    _nested_model_tuple_fields: Dict[str, Tuple[Any, ...]] = {}
-    _nested_model_list_fields: Dict[str, Type["AbstractModel"]] = {}
-    _nested_model_fields: Dict[str, Type["AbstractModel"]] = {}
+    _field_type_trees: Dict[str, Optional[AggTypeTree]] = {}
+    _field_typed_keys: Dict[str, str] = {}
+    _strict: bool = False
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @classmethod
@@ -59,32 +89,13 @@ class AbstractModel(BaseModel):
         return cls._store
 
     @classmethod
-    def get_nested_model_tuple_fields(cls):
-        """Gets the mapping for fields that have tuples of nested models.
+    def get_field_type_trees(cls):
+        """Gets the mapping for fields and the trees of the types that form their aggregate types.
 
         Returns:
-             The mapping of field name and field type of a form similar to
-              `Tuple[str, Book, date]`
+             The mapping of field name and type trees of their aggregate types
         """
-        return cls._nested_model_tuple_fields
-
-    @classmethod
-    def get_nested_model_list_fields(cls):
-        """Gets the mapping for fields that have lists of nested models.
-
-        Returns:
-             The mapping of field name and model class nested in that field.
-        """
-        return cls._nested_model_list_fields
-
-    @classmethod
-    def get_nested_model_fields(cls):
-        """Gets the mapping for fields that have nested models.
-
-        Returns:
-             The mapping of field name and model class nested in that field.
-        """
-        return cls._nested_model_fields
+        return cls._field_type_trees
 
     @classmethod
     def get_primary_key_field(cls):
@@ -108,6 +119,15 @@ class AbstractModel(BaseModel):
         return cls._field_types
 
     @classmethod
+    def get_field_typed_keys(cls) -> Dict[str, Any]:
+        """Gets the mapping of field and their type-aware key names for current Model.
+
+        Returns:
+            the mapping of field and the type-aware key names for current Model
+        """
+        return cls._field_typed_keys
+
+    @classmethod
     def initialize(cls):
         """Initializes class-wide variables for performance's reasons.
 
@@ -116,48 +136,16 @@ class AbstractModel(BaseModel):
         """
         cls._field_types = typing.get_type_hints(cls)
 
-        cls._nested_model_list_fields = {}
-        cls._nested_model_tuple_fields = {}
-        cls._nested_model_fields = {}
+        cls._field_type_trees = {
+            field: _generate_field_type_tree(field_type, strict=cls._strict)
+            for field, field_type in cls._field_types.items()
+            if not field.startswith("_")
+        }
 
-        for field, field_type in cls._field_types.items():
-            try:
-                # In case the annotation is Optional, an alias of Union[X, None], extract the X
-                is_generic = hasattr(field_type, "__origin__")
-                if (
-                    is_generic
-                    and typing_get_origin(field_type) == Union
-                    and typing_get_args(field_type)[-1] == None.__class__
-                ):
-                    field_type = typing_get_args(field_type)[0]
-                    is_generic = hasattr(field_type, "__origin__")
-
-                if (
-                    is_generic
-                    and typing_get_origin(field_type) in (List, list)
-                    and issubclass(typing_get_args(field_type)[0], AbstractModel)
-                ):
-                    cls._nested_model_list_fields[field] = typing_get_args(field_type)[
-                        0
-                    ]
-
-                elif (
-                    is_generic
-                    and typing_get_origin(field_type) in (Tuple, tuple)
-                    and any(
-                        [
-                            issubclass(v, AbstractModel)
-                            for v in typing_get_args(field_type)
-                        ]
-                    )
-                ):
-                    cls._nested_model_tuple_fields[field] = typing_get_args(field_type)
-
-                elif issubclass(field_type, AbstractModel):
-                    cls._nested_model_fields[field] = field_type
-
-            except (TypeError, AttributeError):
-                pass
+        cls._field_typed_keys = {
+            field: _get_typed_field_key(field, type_tree=type_tree)
+            for field, type_tree in cls._field_type_trees.items()
+        }
 
     @classmethod
     def serialize_partially(cls, data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -192,70 +180,174 @@ class AbstractModel(BaseModel):
 
         parsed_dict = {}
 
-        nested_model_list_fields = cls.get_nested_model_list_fields()
-        nested_model_tuple_fields = cls.get_nested_model_tuple_fields()
-        nested_model_fields = cls.get_nested_model_fields()
+        field_type_trees = cls.get_field_type_trees()
 
         for i in range(0, len(data), 2):
             key = from_bytes_to_str(data[i])
             field_type = cls._field_types.get(key)
             value = from_str_or_bytes_to_any(value=data[i + 1], field_type=field_type)
+            type_tree = field_type_trees.get(key)
 
-            if key in nested_model_list_fields and value is not None:
-                value = _cast_lists(value, nested_model_list_fields[key])
-
-            elif key in nested_model_tuple_fields and value is not None:
-                value = _cast_tuples(value, nested_model_tuple_fields[key])
-
-            elif key in nested_model_fields and value is not None:
-                value = _cast_to_model(value=value, model=nested_model_fields[key])
-
-            parsed_dict[key] = value
+            parsed_dict[key] = _cast_by_type_tree(value=value, type_tree=type_tree)
 
         return parsed_dict
 
 
-def _cast_lists(value: List[Any], _type: Type[AbstractModel]) -> List[AbstractModel]:
-    """Casts a list of flattened key-value lists into a list of _type.
+def _generate_field_type_tree(field_type: Any, strict: bool = False) -> AggTypeTree:
+    """Gets the tree of types for the given aggregate type of the field
 
     Args:
-        _type: the type to cast the records to.
-        value: the value to convert
+        field_type: the type of the field
+        strict: whether to raise an error if a given generic type is not supported; default=False
 
     Returns:
-        a list of records of the given _type
+        the type of nested model or None if not a nested model instance,
+            and a tuple of the types of its constituent types
     """
-    return [_type(**_type.deserialize_partially(item)) for item in value]
+    try:
+        nesting_type = None
+        generic_cls = typing_get_origin(field_type)
+
+        if generic_cls is None:
+            if issubclass(field_type, AbstractModel):
+                return NestingType.ON_ROOT, (field_type,)
+            return None, (field_type,)
+
+        type_args = typing_get_args(field_type)
+
+        if generic_cls is Union:
+            nesting_type = NestingType.IN_UNION
+
+        elif generic_cls in (List, list):
+            nesting_type = NestingType.IN_LIST
+
+        elif generic_cls in (Tuple, tuple):
+            nesting_type = NestingType.IN_TUPLE
+
+        elif generic_cls in (Dict, dict):
+            nesting_type = NestingType.IN_DICT
+
+        elif strict:
+            raise NotImplementedError(
+                f"Generic class type: {generic_cls} not supported for nested models"
+            )
+
+        return nesting_type, tuple(
+            [_generate_field_type_tree(v, strict) for v in type_args]
+        )
+
+    except AttributeError:
+        return None, (field_type,)
 
 
-def _cast_tuples(value: List[Any], _type: Tuple[Any, ...]) -> Tuple[Any, ...]:
-    """Casts a list of flattened key-value lists into a list of tuple of _type,.
+def _cast_by_type_tree(value: Any, type_tree: Optional[AggTypeTree]) -> Any:
+    """Casts a given value into a value basing on the tree of its aggregate type
 
     Args:
-        _type: the tuple signature type to cast the records to
-            e.g. Tuple[str, Book, int]
-        value: the value to convert
+        value: the value to be cast basing on the type tree
+        type_tree: the tree representing the nested hierarchy of types for the aggregate
+            type that the value is to be cast into
 
     Returns:
-        a list of records of tuple signature specified by `_type`
+        the parsed value
     """
-    items = []
-    for field_type, value in zip(_type, value):
-        if issubclass(field_type, AbstractModel) and value is not None:
-            value = field_type(**field_type.deserialize_partially(value))
-        items.append(value)
+    if value is None or type_tree is None:
+        # return the value as is because it cannot be cast
+        return value
 
-    return tuple(items)
+    nesting_type, type_args = type_tree
+
+    if nesting_type is NestingType.ON_ROOT:
+        _type = type_args[0]
+        return _type(**_type.deserialize_partially(value))
+
+    if nesting_type is NestingType.IN_LIST:
+        _type = type_args[0]
+        return [_cast_by_type_tree(item, _type) for item in value]
+
+    if nesting_type is NestingType.IN_TUPLE:
+        return tuple(
+            [_cast_by_type_tree(item, _type) for _type, item in zip(type_args, value)]
+        )
+
+    if nesting_type is NestingType.IN_DICT:
+        _, value_type = type_args
+        return {k: _cast_by_type_tree(v, value_type) for k, v in value.items()}
+
+    if nesting_type is NestingType.IN_UNION:
+        # the value can be any of the types in type_args
+        for _type in type_args:
+            try:
+                parsed_value = _cast_by_type_tree(value, _type)
+                # return the first successfully parsed value
+                # that is not equal to the original value
+                if parsed_value != value:
+                    return parsed_value
+            except Exception:
+                pass
+
+    # return the value without any parsing
+    return value
 
 
-def _cast_to_model(value: List[Any], model: Type[AbstractModel]) -> AbstractModel:
-    """Converts a list of flattened key-value lists into a list of models,.
+def _get_typed_field_key(
+    field: str, type_tree: AggTypeTree, initial_prefix: str = ""
+) -> str:
+    """Returns the key for the given field with extra information of its type
 
     Args:
-        model: the model class to cast to
-        value: the value to cast
+        field: the original key
+        type_tree: the tree of types that form the aggregate tree for the given key
+        initial_prefix: the initial_prefix to add to the field
 
     Returns:
-        a list of model instances of type `model`
+        the key with extra type information in its string
     """
-    return model(**model.deserialize_partially(value))
+    if type_tree is None:
+        return field
+
+    nesting_type, type_args = type_tree
+
+    if nesting_type is NestingType.ON_ROOT:
+        # we have found a NestedModel, so we stop recursion
+        if initial_prefix:
+            return f"{initial_prefix}{field}"
+        return f"{NESTED_MODEL_PREFIX}{field}"
+
+    if nesting_type is NestingType.IN_LIST:
+        _type = type_args[0]
+        return _get_typed_field_key(
+            field, _type, initial_prefix=NESTED_MODEL_LIST_FIELD_PREFIX
+        )
+
+    if nesting_type is NestingType.IN_TUPLE:
+        for _type in type_args:
+            key = _get_typed_field_key(
+                field, _type, initial_prefix=NESTED_MODEL_TUPLE_FIELD_PREFIX
+            )
+            if key != field:
+                return key
+
+    if nesting_type is NestingType.IN_DICT:
+        _, value_type = type_args
+        return _get_typed_field_key(
+            field, value_type, initial_prefix=NESTED_MODEL_DICT_FIELD_PREFIX
+        )
+
+    if nesting_type is NestingType.IN_UNION:
+        # the value can be any of the types in type_args
+        for _type in type_args:
+            try:
+                key = _get_typed_field_key(field, type_tree=_type)
+                # return the first successful value
+                # that is not equal to the original value
+                # FIXME: Note that this is not comprehensive enough because
+                #   it is possible to have Union[AbstractModel, List[AbstractModel]]
+                #   but that would be a complicated type to parse/serialize
+                #   Moral of story: Don't use it :-)
+                if key != field:
+                    return key
+            except Exception:
+                pass
+
+    return field

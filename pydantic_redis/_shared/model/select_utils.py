@@ -5,9 +5,6 @@
 from typing import List, Any, Type, Union, Awaitable, Optional
 
 from pydantic_redis._shared.model.prop_utils import (
-    NESTED_MODEL_PREFIX,
-    NESTED_MODEL_LIST_FIELD_PREFIX,
-    NESTED_MODEL_TUPLE_FIELD_PREFIX,
     get_redis_keys_regex,
     get_redis_key_prefix,
     get_model_index_key,
@@ -17,7 +14,7 @@ from pydantic_redis._shared.model.prop_utils import (
 from .base import AbstractModel
 
 
-def get_select_fields(model: Type[AbstractModel], columns: List[str]) -> List[str]:
+def get_select_fields(model: Type[AbstractModel], columns: List[str] = []) -> List[str]:
     """Gets the fields to be used for selecting HMAP fields in Redis.
 
     It replaces any fields in `columns` that correspond to nested records with their
@@ -30,22 +27,8 @@ def get_select_fields(model: Type[AbstractModel], columns: List[str]) -> List[st
     Returns:
         the fields for selecting, with nested fields being given appropriate prefixes.
     """
-    fields = []
-    nested_model_list_fields = model.get_nested_model_list_fields()
-    nested_model_tuple_fields = model.get_nested_model_tuple_fields()
-    nested_model_fields = model.get_nested_model_fields()
-
-    for col in columns:
-
-        if col in nested_model_fields:
-            col = f"{NESTED_MODEL_PREFIX}{col}"
-        elif col in nested_model_list_fields:
-            col = f"{NESTED_MODEL_LIST_FIELD_PREFIX}{col}"
-        elif col in nested_model_tuple_fields:
-            col = f"{NESTED_MODEL_TUPLE_FIELD_PREFIX}{col}"
-
-        fields.append(col)
-    return fields
+    typed_keys = model.get_field_typed_keys()
+    return [typed_keys.get(col, col) for col in columns]
 
 
 def select_all_fields_all_ids(

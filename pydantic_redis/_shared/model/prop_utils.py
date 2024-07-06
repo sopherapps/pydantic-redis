@@ -1,18 +1,10 @@
 """Exposes utils for getting properties of the Model
 
-Attributes:
-    NESTED_MODEL_PREFIX (str): the prefix for fields with single nested models
-    NESTED_MODEL_LIST_FIELD_PREFIX (str): the prefix for fields with lists of nested models
-    NESTED_MODEL_TUPLE_FIELD_PREFIX (str): the prefix for fields with tuples of nested models
 """
 
 from typing import Type, Any
 
 from .base import AbstractModel
-
-NESTED_MODEL_PREFIX = "__"
-NESTED_MODEL_LIST_FIELD_PREFIX = "___"
-NESTED_MODEL_TUPLE_FIELD_PREFIX = "____"
 
 
 def get_redis_key(model: Type[AbstractModel], primary_key_value: Any):
