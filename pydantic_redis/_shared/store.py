@@ -56,6 +56,24 @@ class AbstractStore(BaseModel):
         life_span_in_seconds: Optional[int] = None,
         **data: Any,
     ):
+        """
+        A store provides all functionality required to quickly persist and retrieve
+        pydantic objects into and from a Redis store.
+
+        This store will accept the configuration (in the form of a `RedisConfig`, and
+        create a new Redis instance according to that configuration. Alternatively,
+        one can pass an existing Redis instance to be used. One can only pass one ot
+        these.
+
+        :param name: The name of the store.
+        :param redis_config: A Redis configuration object. This will be used to create a
+        new Redis instance, using the parameters configured.
+        :param redis_store: An existing Redis instance to use. Can only be passed when no
+        `redis_config` is passed.
+        :param life_span_in_seconds: The default lifespan in seconds that the store will use
+        :param data: an other keyword argument that will be passed to the constructor of
+        the object
+        """
         super().__init__(
             name=name,
             redis_config=redis_config,
