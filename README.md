@@ -88,6 +88,37 @@ benchmark_bulk_insert[redis_store]                         721.2247 (6.19)     6
 ---------------------------------------------------------------------------------------------------------------------
 ```
 
+# >=v0.7 (with deeply nested models)
+
+```
+------------------------------------------------- benchmark: 22 tests -------------------------------------------------
+Name (time in us)                                              Mean                 Min                   Max          
+-----------------------------------------------------------------------------------------------------------------------
+benchmark_delete[redis_store-Wuthering Heights]            123.2946 (1.02)     107.9690 (1.0)        502.6140 (1.33)   
+benchmark_bulk_delete[redis_store]                         120.5815 (1.0)      111.9320 (1.04)       378.8660 (1.0)    
+benchmark_select_columns_for_one_id[redis_store-book2]     208.2612 (1.73)     180.4660 (1.67)       470.9860 (1.24)   
+benchmark_select_columns_for_one_id[redis_store-book1]     207.9143 (1.72)     180.6440 (1.67)       489.6890 (1.29)   
+benchmark_select_columns_for_one_id[redis_store-book0]     204.2471 (1.69)     183.4360 (1.70)       485.2500 (1.28)   
+benchmark_select_columns_for_one_id[redis_store-book3]     209.5764 (1.74)     189.5780 (1.76)       462.5650 (1.22)   
+benchmark_select_all_for_one_id[redis_store-book0]         226.4569 (1.88)     207.4920 (1.92)       499.9470 (1.32)   
+benchmark_select_all_for_one_id[redis_store-book3]         241.5488 (2.00)     210.5230 (1.95)       504.5150 (1.33)   
+benchmark_select_all_for_one_id[redis_store-book1]         234.4014 (1.94)     210.6420 (1.95)       501.2470 (1.32)   
+benchmark_select_all_for_one_id[redis_store-book2]         228.9277 (1.90)     212.0090 (1.96)       509.5740 (1.34)   
+benchmark_update[redis_store-Wuthering Heights-data0]      276.3908 (2.29)     238.3390 (2.21)       704.9450 (1.86)   
+benchmark_single_insert[redis_store-book3]                 311.0476 (2.58)     262.2940 (2.43)       589.3940 (1.56)   
+benchmark_select_columns_for_some_items[redis_store]       291.2779 (2.42)     266.0960 (2.46)       564.3510 (1.49)   
+benchmark_select_columns_paginated[redis_store]            300.4108 (2.49)     269.4740 (2.50)       552.8510 (1.46)   
+benchmark_single_insert[redis_store-book1]                 304.5771 (2.53)     274.1740 (2.54)       547.5210 (1.45)   
+benchmark_single_insert[redis_store-book2]                 317.2681 (2.63)     275.6170 (2.55)       641.5440 (1.69)   
+benchmark_single_insert[redis_store-book0]                 313.0004 (2.60)     277.3190 (2.57)       558.2160 (1.47)   
+benchmark_select_some_items[redis_store]                   343.2569 (2.85)     311.9140 (2.89)       624.6600 (1.65)   
+benchmark_select_default_paginated[redis_store]            359.8463 (2.98)     325.8310 (3.02)       623.2360 (1.65)   
+benchmark_select_columns[redis_store]                      486.6047 (4.04)     429.3250 (3.98)       867.8780 (2.29)   
+benchmark_select_default[redis_store]                      631.3835 (5.24)     584.7630 (5.42)     1,033.5990 (2.73)   
+benchmark_bulk_insert[redis_store]                         761.0832 (6.31)     724.1240 (6.71)     1,034.2950 (2.73)   
+-----------------------------------------------------------------------------------------------------------------------
+```
+
 ## Contributions
 
 Contributions are welcome. The docs have to maintained, the code has to be made cleaner, more idiomatic and faster,

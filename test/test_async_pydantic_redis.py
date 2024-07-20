@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import pytest
 
-from pydantic_redis._shared.model.prop_utils import NESTED_MODEL_PREFIX  # noqa
+from pydantic_redis._shared.model.base import NESTED_MODEL_PREFIX  # noqa
 from pydantic_redis._shared.utils import strip_leading  # noqa
 from pydantic_redis.asyncio import Model, RedisConfig, Store
 from test.conftest import (

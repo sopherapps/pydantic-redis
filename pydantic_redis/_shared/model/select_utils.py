@@ -2,22 +2,22 @@
 
 """
 
-from typing import List, Any, Type, Union, Awaitable, Optional
+from typing import List, Any, Type, Union, Awaitable, Optional, Dict, Tuple
 
 from pydantic_redis._shared.model.prop_utils import (
-    NESTED_MODEL_PREFIX,
-    NESTED_MODEL_LIST_FIELD_PREFIX,
-    NESTED_MODEL_TUPLE_FIELD_PREFIX,
     get_redis_keys_regex,
     get_redis_key_prefix,
     get_model_index_key,
 )
 
-
 from .base import AbstractModel
+from ..utils import groups_of_n
 
 
-def get_select_fields(model: Type[AbstractModel], columns: List[str]) -> List[str]:
+RawRedisSelectData = List[Tuple[List[Any], List[Any]]]
+
+
+def get_select_fields(model: Type[AbstractModel], columns: List[str] = ()) -> List[str]:
     """Gets the fields to be used for selecting HMAP fields in Redis.
 
     It replaces any fields in `columns` that correspond to nested records with their
@@ -30,29 +30,15 @@ def get_select_fields(model: Type[AbstractModel], columns: List[str]) -> List[st
     Returns:
         the fields for selecting, with nested fields being given appropriate prefixes.
     """
-    fields = []
-    nested_model_list_fields = model.get_nested_model_list_fields()
-    nested_model_tuple_fields = model.get_nested_model_tuple_fields()
-    nested_model_fields = model.get_nested_model_fields()
-
-    for col in columns:
-
-        if col in nested_model_fields:
-            col = f"{NESTED_MODEL_PREFIX}{col}"
-        elif col in nested_model_list_fields:
-            col = f"{NESTED_MODEL_LIST_FIELD_PREFIX}{col}"
-        elif col in nested_model_tuple_fields:
-            col = f"{NESTED_MODEL_TUPLE_FIELD_PREFIX}{col}"
-
-        fields.append(col)
-    return fields
+    typed_keys = model.get_field_typed_keys()
+    return [typed_keys.get(col, col) for col in columns]
 
 
 def select_all_fields_all_ids(
     model: Type[AbstractModel],
     skip: int = 0,
     limit: Optional[int] = None,
-) -> Union[List[List[Any]], Awaitable[List[List[Any]]]]:
+) -> Union[RawRedisSelectData, Awaitable[RawRedisSelectData]]:
     """Retrieves all records of the given model in the redis database.
 
     Args:
@@ -61,7 +47,7 @@ def select_all_fields_all_ids(
         limit: the maximum number of records to return. If None, limit is infinity.
 
     Returns:
-        the list of records from redis, each record being a flattened list of key-values.
+        list of tuple of [record, index-of-nested-models] with each record being a flattened list of key-values.
         In case we are using async, an Awaitable of that list is returned instead.
     """
     if isinstance(limit, int):
@@ -75,7 +61,7 @@ def select_all_fields_all_ids(
 
 def select_all_fields_some_ids(
     model: Type[AbstractModel], ids: List[str]
-) -> Union[List[List[Any]], Awaitable[List[List[Any]]]]:
+) -> Union[RawRedisSelectData, Awaitable[RawRedisSelectData]]:
     """Retrieves some records from redis.
 
     Args:
@@ -83,7 +69,7 @@ def select_all_fields_some_ids(
         ids: the list of primary keys of the records to be retrieved.
 
     Returns:
-        the list of records where each record is a flattened key-value list.
+        list of tuple of [record, index-of-nested-models] with each record is a flattened key-value list.
         In case we are using async, an Awaitable of that list is returned instead.
     """
     table_prefix = get_redis_key_prefix(model=model)
@@ -97,7 +83,7 @@ def select_some_fields_all_ids(
     fields: List[str],
     skip: int = 0,
     limit: Optional[int] = None,
-) -> Union[List[List[Any]], Awaitable[List[List[Any]]]]:
+) -> Union[RawRedisSelectData, Awaitable[RawRedisSelectData]]:
     """Retrieves records of model from redis, each as with a subset of the fields.
 
     Args:
@@ -107,7 +93,7 @@ def select_some_fields_all_ids(
         limit: the maximum number of records to return. If None, limit is infinity.
 
     Returns:
-        the list of records from redis, each record being a flattened list of key-values.
+        list of tuple of [record, index-of-nested-models] with each record being a flattened list of key-values.
         In case we are using async, an Awaitable of that list is returned instead.
     """
     columns = get_select_fields(model=model, columns=fields)
@@ -125,7 +111,7 @@ def select_some_fields_all_ids(
 
 def select_some_fields_some_ids(
     model: Type[AbstractModel], fields: List[str], ids: List[str]
-) -> Union[List[List[Any]], Awaitable[List[List[Any]]]]:
+) -> Union[RawRedisSelectData, Awaitable[RawRedisSelectData]]:
     """Retrieves some records of current model from redis, each as with a subset of the fields.
 
     Args:
@@ -134,7 +120,7 @@ def select_some_fields_some_ids(
         ids: the list of primary keys of the records to be retrieved.
 
     Returns:
-        the list of records from redis, each record being a flattened list of key-values.
+        list of tuple of [record, index-of-nested-models] with each record being a flattened list of key-values.
         In case we are using async, an Awaitable of that list is returned instead.
     """
     table_prefix = get_redis_key_prefix(model=model)
@@ -145,7 +131,7 @@ def select_some_fields_some_ids(
 
 
 def parse_select_response(
-    model: Type[AbstractModel], response: List[List], as_models: bool
+    model: Type[AbstractModel], response: RawRedisSelectData, as_models: bool
 ):
     """Casts a list of flattened key-value lists into a list of models or dicts.
 
@@ -167,17 +153,23 @@ def parse_select_response(
 
     if as_models:
         return [
-            model(**model.deserialize_partially(record))
-            for record in response
-            if record != []
+            model(
+                **model.deserialize_partially(record, index=_construct_index(raw_index))
+            )
+            for record, raw_index in response
+            if len(response) != 0
         ]
 
-    return [model.deserialize_partially(record) for record in response if record != []]
+    return [
+        model.deserialize_partially(record, index=_construct_index(raw_index))
+        for record, raw_index in response
+        if len(response) != 0
+    ]
 
 
 def _select_all_ids_all_fields_paginated(
     model: Type[AbstractModel], limit: int, skip: Optional[int]
-):
+) -> Union[RawRedisSelectData, Awaitable[RawRedisSelectData]]:
     """Retrieves a slice of all records of the given model in the redis database.
 
     Args:
@@ -186,7 +178,7 @@ def _select_all_ids_all_fields_paginated(
         limit: the maximum number of records to return. If None, limit is infinity.
 
     Returns:
-        the list of records from redis, each record being a flattened list of key-values.
+        list of tuple of [record, index-of-nested-models] with each record being a flattened list of key-values.
         In case we are using async, an Awaitable of that list is returned instead.
     """
     if skip is None:
@@ -199,7 +191,7 @@ def _select_all_ids_all_fields_paginated(
 
 def _select_some_fields_all_ids_paginated(
     model: Type[AbstractModel], columns: List[str], limit: int, skip: int
-):
+) -> Union[RawRedisSelectData, Awaitable[RawRedisSelectData]]:
     """Retrieves a slice of all records of model from redis, each as with a subset of the fields.
 
     Args:
@@ -209,7 +201,7 @@ def _select_some_fields_all_ids_paginated(
         limit: the maximum number of records to return. If None, limit is infinity.
 
     Returns:
-        the list of records from redis, each record being a flattened list of key-values.
+        list of tuple of [record, index-of-nested-models] with each record being a flattened list of key-values.
         In case we are using async, an Awaitable of that list is returned instead.
     """
     if skip is None:
@@ -218,3 +210,26 @@ def _select_some_fields_all_ids_paginated(
     args = [table_index_key, skip, limit, *columns]
     store = model.get_store()
     return store.paginated_select_some_fields_for_all_ids_script(args=args)
+
+
+def _construct_index(index_list: List[Any]) -> Dict[str, Any]:
+    """Constructs the index dict from the index list of nested models returned from redis
+
+    Args:
+        index_list: the flat list of the index of nested models, with key followed by [model, index] tuple
+            [key1, [model1_flat_list, index1_flat_list], key2, [model2_flat_list, index2_flat_list]...]
+
+    Returns:
+        the index as a dict
+    """
+    index = {}
+    for k, model_and_index in groups_of_n(index_list, 2):
+        model_as_list, index_as_list = model_and_index
+        model_index = _construct_index(index_as_list)
+        index[k] = {
+            # remove the dunders for nested model fields
+            key.lstrip("_"): model_index.get(value, value)
+            for key, value in groups_of_n(model_as_list, 2)
+        }
+
+    return index

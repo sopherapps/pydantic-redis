@@ -1,18 +1,15 @@
 """Exposes utils for getting properties of the Model
 
-Attributes:
-    NESTED_MODEL_PREFIX (str): the prefix for fields with single nested models
-    NESTED_MODEL_LIST_FIELD_PREFIX (str): the prefix for fields with lists of nested models
-    NESTED_MODEL_TUPLE_FIELD_PREFIX (str): the prefix for fields with tuples of nested models
 """
 
+import re
 from typing import Type, Any
 
 from .base import AbstractModel
 
-NESTED_MODEL_PREFIX = "__"
-NESTED_MODEL_LIST_FIELD_PREFIX = "___"
-NESTED_MODEL_TUPLE_FIELD_PREFIX = "____"
+
+NESTED_MODEL_SEPARATOR = "_%&_"
+NESTED_MODEL_VALUE_REGEX = re.compile(f"^([\\w_]+{NESTED_MODEL_SEPARATOR}[\\w_]+)$")
 
 
 def get_redis_key(model: Type[AbstractModel], primary_key_value: Any):
@@ -38,7 +35,7 @@ def get_redis_key_prefix(model: Type[AbstractModel]):
         the prefix of the all the redis keys that are associated with this model
     """
     model_name = model.__name__.lower()
-    return f"{model_name}_%&_"
+    return f"{model_name}{NESTED_MODEL_SEPARATOR}"
 
 
 def get_redis_keys_regex(model: Type[AbstractModel]):

@@ -146,3 +146,5 @@ cython_debug/
 env3.7/
 /lua_scripts/
 .DS_Store
+
+*.lua

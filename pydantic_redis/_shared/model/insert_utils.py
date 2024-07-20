@@ -3,7 +3,7 @@
 """
 
 from datetime import datetime
-from typing import Union, Optional, Any, Dict, Tuple, List, Type
+from typing import Union, Optional, Any, Dict, Type
 
 from redis.asyncio.client import Pipeline as AioPipeline
 from redis.client import Pipeline
@@ -11,12 +11,14 @@ from redis.client import Pipeline
 from .prop_utils import (
     get_redis_key,
     get_model_index_key,
-    NESTED_MODEL_PREFIX,
-    NESTED_MODEL_LIST_FIELD_PREFIX,
-    NESTED_MODEL_TUPLE_FIELD_PREFIX,
 )
 
-from .base import AbstractModel
+from .base import (
+    AbstractModel,
+    NestingType,
+    AggTypeTree,
+    NESTED_MODEL_LIST_FIELD_PREFIX,
+)
 
 
 def insert_on_pipeline(
@@ -75,16 +77,16 @@ def _serialize_nested_models(
 
     In order to make the record serializable, all nested models including those in
     lists and tuples of nested models are converted to their primary keys,
-    after being their insert operations have been added to the pipeline.
+    after their insert operations have been added to the pipeline.
 
     A few cleanups it does include:
       - Upserting any nested records in `record`
       - Replacing the keys of nested records with their NESTED_MODEL_PREFIX prefixed versions
         e.g. `__author` instead of author
       - Replacing the keys of lists of nested records with their NESTED_MODEL_LIST_FIELD_PREFIX prefixed versions
-        e.g. `__%&l_author` instead of author
+        e.g. `___author` instead of author
       - Replacing the keys of tuples of nested records with their NESTED_MODEL_TUPLE_FIELD_PREFIX prefixed versions
-        e.g. `__%&l_author` instead of author
+        e.g. `____author` instead of author
       - Replacing the values of nested records with their foreign keys
 
     Args:
@@ -97,136 +99,97 @@ def _serialize_nested_models(
         the partially serialized dict that has no nested models
     """
     data = record.items() if isinstance(record, dict) else record
+    field_type_trees = model.get_field_type_trees()
+    field_typed_keys = model.get_field_typed_keys()
+
     new_data = {}
-
-    nested_model_list_fields = model.get_nested_model_list_fields()
-    nested_model_tuple_fields = model.get_nested_model_tuple_fields()
-    nested_model_fields = model.get_nested_model_fields()
-
     for k, v in data:
-        key, value = k, v
+        type_tree = field_type_trees.get(k)
+        key = field_typed_keys.get(k, k)
+        new_data[key] = _serialize_by_type_tree(
+            value=v, type_tree=type_tree, pipeline=pipeline, life_span=life_span
+        )
 
-        if key in nested_model_list_fields:
-            key, value = _serialize_list(
-                key=key, value=value, pipeline=pipeline, life_span=life_span
-            )
-        elif key in nested_model_tuple_fields:
-            key, value = _serialize_tuple(
-                key=key,
-                value=value,
-                pipeline=pipeline,
-                life_span=life_span,
-                tuple_fields=nested_model_tuple_fields,
-            )
-        elif key in nested_model_fields:
-            key, value = _serialize_model(
-                key=key, value=value, pipeline=pipeline, life_span=life_span
-            )
-
-        new_data[key] = value
     return new_data
 
 
-def _serialize_tuple(
-    key: str,
-    value: Tuple[AbstractModel],
+def _serialize_by_type_tree(
+    value: Any,
+    type_tree: Optional[AggTypeTree],
     pipeline: Union[Pipeline, AioPipeline],
     life_span: Optional[Union[float, int]],
-    tuple_fields: Dict[str, Tuple[Any, ...]],
-) -> Tuple[str, List[Any]]:
-    """Replaces models in a tuple with strings.
+) -> Any:
+    """Transforms a given value into a value basing on the tree of its aggregate type
 
-    It adds insert operations for the records in the tuple onto the pipeline
-    and returns the tuple with the models replaced by their primary keys as value.
+    Nested models are inserted into the redis database and their positions in the data
+    replaced by their primary keys
 
-    Returns:
-        key: the original `key` prefixed with NESTED_MODEL_TUPLE_FIELD_PREFIX
-        value: tthe tuple with the models replaced by their primary keys
-    """
-    try:
-        field_types = tuple_fields.get(key, ())
-        value = [
-            (
-                insert_on_pipeline(
-                    model=field_type,
-                    _id=None,
-                    pipeline=pipeline,
-                    record=item,
-                    life_span=life_span,
-                )
-                if issubclass(field_type, AbstractModel)
-                else item
-            )
-            for field_type, item in zip(field_types, value)
-        ]
-        key = f"{NESTED_MODEL_TUPLE_FIELD_PREFIX}{key}"
-    except TypeError:
-        # In case the value is None, just ignore
-        pass
-
-    return key, value
-
-
-def _serialize_list(
-    key: str,
-    value: List[AbstractModel],
-    pipeline: Union[Pipeline, AioPipeline],
-    life_span: Optional[Union[float, int]],
-) -> Tuple[str, List[Any]]:
-    """Casts a list of models into a list of strings
-
-    It adds insert operations for the records in the list onto the pipeline
-    and returns a list of their primary keys as value.
+    Args:
+        value: the value to be serialized basing on the type tree
+        type_tree: the tree representing the nested hierarchy of types for the aggregate
+            type that the value is to be cast into
+        pipeline: the redis pipeline on which the redis operations are to be done.
+        life_span: the time-to-live in seconds for the given record.
 
     Returns:
-        key: the original `key` prefixed with NESTED_MODEL_LIST_FIELD_PREFIX
-        value: the list of primary keys of the records to be inserted
+        the serialized value
     """
-    try:
-        value = [
-            insert_on_pipeline(
-                model=item.__class__,
-                _id=None,
-                pipeline=pipeline,
-                record=item,
-                life_span=life_span,
-            )
-            for item in value
-        ]
-        key = f"{NESTED_MODEL_LIST_FIELD_PREFIX}{key}"
-    except TypeError:
-        # In case the value is None, just ignore
-        pass
+    if type_tree is None:
+        # return the value as is because it cannot be serialized
+        return value
 
-    return key, value
+    nesting_type, type_args = type_tree
 
-
-def _serialize_model(
-    key: str,
-    value: AbstractModel,
-    pipeline: Union[Pipeline, AioPipeline],
-    life_span: Optional[Union[float, int]],
-) -> Tuple[str, str]:
-    """Casts a model into a string
-
-    It adds an insert operation for the given model onto the pipeline
-    and returns its primary key as value.
-
-    Returns:
-        key: the original `key` prefixed with NESTED_MODEL_PREFIX
-        value: the primary key of the model
-    """
-    try:
-        value = insert_on_pipeline(
+    if nesting_type is NestingType.ON_ROOT:
+        return insert_on_pipeline(
             model=value.__class__,
             _id=None,
             pipeline=pipeline,
             record=value,
             life_span=life_span,
         )
-        key = f"{NESTED_MODEL_PREFIX}{key}"
-    except TypeError:
-        # In case the value is None, just ignore
-        pass
 
-    return key, value
+    if nesting_type is NestingType.IN_LIST:
+        _type = type_args[0]
+        return [
+            _serialize_by_type_tree(
+                value=item, type_tree=_type, pipeline=pipeline, life_span=life_span
+            )
+            for item in value
+        ]
+
+    if nesting_type is NestingType.IN_TUPLE:
+        return tuple(
+            [
+                _serialize_by_type_tree(
+                    value=item, type_tree=_type, pipeline=pipeline, life_span=life_span
+                )
+                for _type, item in zip(type_args, value)
+            ]
+        )
+
+    if nesting_type is NestingType.IN_DICT:
+        _, value_type = type_args
+        return {
+            k: _serialize_by_type_tree(
+                value=v, type_tree=value_type, pipeline=pipeline, life_span=life_span
+            )
+            for k, v in value.items()
+        }
+
+    if nesting_type is NestingType.IN_UNION:
+        # the value can be any of the types in type_args
+        for _type in type_args:
+            try:
+                serialized_value = _serialize_by_type_tree(
+                    value=value, type_tree=_type, pipeline=pipeline, life_span=life_span
+                )
+                # return the first successfully serialized value
+                # that is not equal to the original value
+                if serialized_value != value:
+                    return serialized_value
+            except Exception:
+                pass
+
+    # return the value without any serializing
+    return value
