@@ -58,6 +58,7 @@ class Library(syn.Model):
     new: Optional[Tuple[Book, Author, Book, int]] = None
     list_of_tuples: Optional[List[Tuple[str, Book]]] = None
     dict_of_models: Optional[Dict[str, Book]] = None
+    optional_nested: Optional[Book] = None
 
 
 class AsyncLibrary(asy.Model):

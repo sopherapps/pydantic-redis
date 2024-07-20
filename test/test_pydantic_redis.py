@@ -203,7 +203,11 @@ def test_update_optional_nested_tuple_of_models(store: Store):
 @pytest.mark.parametrize("store", redis_store_fixture)
 def test_update_list_of_tuples_of_nested_models(store: Store):
     list_of_tuples = [("some book", books[0]), ("book2", books[2])]
-    data = [Library(name="Babel Library", address="In a book", list_of_tuples=list_of_tuples)]
+    data = [
+        Library(
+            name="Babel Library", address="In a book", list_of_tuples=list_of_tuples
+        )
+    ]
     Library.insert(data)
     # the tuple of nested models is automatically inserted
     got = sorted(Book.select(), key=lambda x: x.title)
@@ -219,13 +223,45 @@ def test_update_list_of_tuples_of_nested_models(store: Store):
 @pytest.mark.parametrize("store", redis_store_fixture)
 def test_update_dict_of_models(store: Store):
     dict_of_models = {"some book": books[0], "book2": books[2]}
-    data = [Library(name="Babel Library", address="In a book", dict_of_models=dict_of_models)]
+    data = [
+        Library(
+            name="Babel Library", address="In a book", dict_of_models=dict_of_models
+        )
+    ]
     Library.insert(data)
-    # the tuple of nested models is automatically inserted
+    # the dict of nested models is automatically inserted
     got = sorted(Book.select(), key=lambda x: x.title)
     expected_books = [book for _, book in dict_of_models.items()]
     expected = sorted(expected_books, key=lambda x: x.title)
     assert expected == got
+
+    got = sorted(Library.select(), key=lambda x: x.name)
+    expected = sorted(data, key=lambda x: x.name)
+    assert got == expected
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_filled_optional_nested_model(store: Store):
+    data = [
+        Library(name="Babel Library", address="In a book", optional_nested=books[0])
+    ]
+    Library.insert(data)
+
+    got = sorted(Book.select(), key=lambda x: x.title)
+    assert [books[0]] == got
+
+    got = sorted(Library.select(), key=lambda x: x.name)
+    expected = sorted(data, key=lambda x: x.name)
+    assert got == expected
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_unfilled_optional_nested_model(store: Store):
+    data = [Library(name="Babel Library", address="In a book")]
+    Library.insert(data)
+
+    got = Book.select()
+    assert got is None
 
     got = sorted(Library.select(), key=lambda x: x.name)
     expected = sorted(data, key=lambda x: x.name)

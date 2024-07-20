@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+- Fixed `AttributeError: 'get_primary_key_field'` when None is passed to a field with an optional nested model
+
 
 ## [0.6.0] - 2024-07-01
 
