@@ -20,6 +20,7 @@ from pydantic_redis._shared.utils import (
     from_dict_to_key_value_list,
     from_bytes_to_str,
     from_str_or_bytes_to_any,
+    groups_of_n,
 )
 
 
@@ -161,19 +162,23 @@ class AbstractModel(BaseModel):
 
     @classmethod
     def deserialize_partially(
-        cls, data: Union[List[Any], Dict[Any, Any]] = ()
+        cls, data: Union[List[Any], Dict[Any, Any]] = (), index: Dict[Any, Any] = None
     ) -> Dict[str, Any]:
-        """Casts str or bytes in a dict or flattened key-value list to expected data types.
+        """Casts str or bytes in a dict to expected data types.
 
         Converts str or bytes to their expected data types
 
         Args:
             data: flattened list of key-values or dictionary of data to cast.
                 Keeping it as potentially a dictionary ensures backward compatibility.
+            index: dictionary of the index of nested models potentially present
 
         Returns:
             the dictionary of properly parsed key-values.
         """
+        if index is None:
+            index = {}
+
         if isinstance(data, dict):
             # for backward compatibility
             data = from_dict_to_key_value_list(data)
@@ -182,13 +187,16 @@ class AbstractModel(BaseModel):
 
         field_type_trees = cls.get_field_type_trees()
 
-        for i in range(0, len(data), 2):
-            key = from_bytes_to_str(data[i])
+        for k, v in groups_of_n(data, 2):
+            # remove the dunders for nested model fields
+            key = from_bytes_to_str(k).lstrip("_")
             field_type = cls._field_types.get(key)
-            value = from_str_or_bytes_to_any(value=data[i + 1], field_type=field_type)
+            value = from_str_or_bytes_to_any(value=v, field_type=field_type)
             type_tree = field_type_trees.get(key)
 
-            parsed_dict[key] = _cast_by_type_tree(value=value, type_tree=type_tree)
+            parsed_dict[key] = _cast_by_type_tree(
+                value=value, type_tree=type_tree, index=index
+            )
 
         return parsed_dict
 
@@ -240,13 +248,16 @@ def _generate_field_type_tree(field_type: Any, strict: bool = False) -> AggTypeT
         return None, (field_type,)
 
 
-def _cast_by_type_tree(value: Any, type_tree: Optional[AggTypeTree]) -> Any:
+def _cast_by_type_tree(
+    value: Any, type_tree: Optional[AggTypeTree], index: Dict[Any, Any] = None
+) -> Any:
     """Casts a given value into a value basing on the tree of its aggregate type
 
     Args:
         value: the value to be cast basing on the type tree
         type_tree: the tree representing the nested hierarchy of types for the aggregate
             type that the value is to be cast into
+        index: dictionary of the index of nested models potentially present
 
     Returns:
         the parsed value
@@ -259,26 +270,33 @@ def _cast_by_type_tree(value: Any, type_tree: Optional[AggTypeTree]) -> Any:
 
     if nesting_type is NestingType.ON_ROOT:
         _type = type_args[0]
-        return _type(**_type.deserialize_partially(value))
+        nested_model_data = value
+        if isinstance(value, str):
+            # load the nested model if it is not yet loaded
+            nested_model_data = index.get(value, value)
+        return _type(**_type.deserialize_partially(nested_model_data))
 
     if nesting_type is NestingType.IN_LIST:
         _type = type_args[0]
-        return [_cast_by_type_tree(item, _type) for item in value]
+        return [_cast_by_type_tree(item, _type, index) for item in value]
 
     if nesting_type is NestingType.IN_TUPLE:
         return tuple(
-            [_cast_by_type_tree(item, _type) for _type, item in zip(type_args, value)]
+            [
+                _cast_by_type_tree(item, _type, index)
+                for _type, item in zip(type_args, value)
+            ]
         )
 
     if nesting_type is NestingType.IN_DICT:
         _, value_type = type_args
-        return {k: _cast_by_type_tree(v, value_type) for k, v in value.items()}
+        return {k: _cast_by_type_tree(v, value_type, index) for k, v in value.items()}
 
     if nesting_type is NestingType.IN_UNION:
         # the value can be any of the types in type_args
         for _type in type_args:
             try:
-                parsed_value = _cast_by_type_tree(value, _type)
+                parsed_value = _cast_by_type_tree(value, _type, index)
                 # return the first successfully parsed value
                 # that is not equal to the original value
                 if parsed_value != value:

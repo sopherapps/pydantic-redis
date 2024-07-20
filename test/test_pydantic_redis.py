@@ -6,6 +6,7 @@ from typing import Dict, Any, Union
 import pytest
 
 from pydantic_redis import Store
+from pydantic_redis._shared.model.prop_utils import NESTED_MODEL_SEPARATOR
 from pydantic_redis.config import RedisConfig  # noqa
 from pydantic_redis._shared.model.base import NESTED_MODEL_PREFIX  # noqa
 from pydantic_redis._shared.utils import strip_leading  # noqa
@@ -192,6 +193,38 @@ def test_update_optional_nested_tuple_of_models(store: Store):
     # the tuple of nested models is automatically inserted
     got = sorted(Book.select(), key=lambda x: x.title)
     expected = sorted(popular_books, key=lambda x: x.title)
+    assert expected == got
+
+    got = sorted(Library.select(), key=lambda x: x.name)
+    expected = sorted(data, key=lambda x: x.name)
+    assert got == expected
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_list_of_tuples_of_nested_models(store: Store):
+    list_of_tuples = [("some book", books[0]), ("book2", books[2])]
+    data = [Library(name="Babel Library", address="In a book", list_of_tuples=list_of_tuples)]
+    Library.insert(data)
+    # the tuple of nested models is automatically inserted
+    got = sorted(Book.select(), key=lambda x: x.title)
+    expected_books = [book for _, book in list_of_tuples]
+    expected = sorted(expected_books, key=lambda x: x.title)
+    assert expected == got
+
+    got = sorted(Library.select(), key=lambda x: x.name)
+    expected = sorted(data, key=lambda x: x.name)
+    assert got == expected
+
+
+@pytest.mark.parametrize("store", redis_store_fixture)
+def test_update_dict_of_models(store: Store):
+    dict_of_models = {"some book": books[0], "book2": books[2]}
+    data = [Library(name="Babel Library", address="In a book", dict_of_models=dict_of_models)]
+    Library.insert(data)
+    # the tuple of nested models is automatically inserted
+    got = sorted(Book.select(), key=lambda x: x.title)
+    expected_books = [book for _, book in dict_of_models.items()]
+    expected = sorted(expected_books, key=lambda x: x.title)
     assert expected == got
 
     got = sorted(Library.select(), key=lambda x: x.name)
@@ -432,7 +465,7 @@ def test_delete_multiple(store: Store):
 def __deserialize_book_data(raw_book_data: Dict[str, Any]) -> Book:
     """Deserializes the raw book data returning a book instance"""
     author_id = raw_book_data.pop(f"{NESTED_MODEL_PREFIX}author")
-    author_id = strip_leading(author_id, "author_%&_")
+    author_id = strip_leading(author_id, f"author{NESTED_MODEL_SEPARATOR}")
 
     data = Book.deserialize_partially(raw_book_data)
 

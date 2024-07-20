@@ -1,6 +1,6 @@
 import socket
 from datetime import date
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict
 
 import pytest
 import pytest_asyncio
@@ -56,6 +56,8 @@ class Library(syn.Model):
     lost: Optional[List[Book]] = None
     popular: Optional[Tuple[Book, Book]] = None
     new: Optional[Tuple[Book, Author, Book, int]] = None
+    list_of_tuples: Optional[List[Tuple[str, Book]]] = None
+    dict_of_models: Optional[Dict[str, Book]] = None
 
 
 class AsyncLibrary(asy.Model):

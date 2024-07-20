@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+- Added support for deeply nested models beyond level-1 deep including:
+  - dictionaries of lists of ... of nested models
+  - lists of tuples of lists .... of nested models
+
+### Fixed
+
+
 ## [0.6.0] - 2024-07-01
 
 ### Added

@@ -3,9 +3,11 @@
 """
 
 import typing
-from typing import Any, Tuple, Optional, Union, Dict, Type, List
+from typing import Any, Tuple, Optional, Union, Dict, Type, List, Iterable, TypeVar
 
 import orjson
+
+T = TypeVar("T")
 
 
 def strip_leading(word: str, substring: str) -> str:
@@ -96,8 +98,12 @@ def from_str_or_bytes_to_any(value: Any, field_type: Type) -> Any:
     elif not isinstance(value, str):
         return value
 
-    # JSON parse all other values that are str
-    return orjson.loads(value)
+    try:
+        # JSON parse all other values that are str
+        return orjson.loads(value)
+    except orjson.JSONDecodeError:
+        # try to be as fault-tolerant as sanely possible
+        return value
 
 
 def from_any_to_valid_redis_type(value: Any) -> Union[str, bytes, List[Any]]:
@@ -155,3 +161,18 @@ def from_dict_to_key_value_list(data: Dict[str, Any]) -> List[Any]:
         parsed_list.append(v)
 
     return parsed_list
+
+
+def groups_of_n(items: Iterable[T], n: int) -> Iterable[Tuple[T, ...]]:
+    """Returns an iterable of tuples of size n from the given list of items
+
+    Note that it might ignore the last items if n does not fit nicely into the items list
+
+    Args:
+        items: the list of items from which to extract the tuples
+        n: the size of the tuples
+
+    Returns:
+        the iterable of tuples of n size from the list of items
+    """
+    return zip(*[iter(items)] * n)
